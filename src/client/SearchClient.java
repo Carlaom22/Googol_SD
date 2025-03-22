@@ -1,33 +1,34 @@
 package client;
 
 import java.rmi.Naming;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import server.SearchService;
 
 public class SearchClient {
     public static void main(String[] args) {
         try {
-            SearchService searchService = (SearchService) Naming.lookup("rmi://localhost/SearchService");
             Scanner scanner = new Scanner(System.in);
 
             while (true) {
                 System.out.println("\n1. Search term");
-                System.out.println("2. See backlinks of a page");
-                System.out.println("3. Stats");
+                System.out.println("2. View backlinks for a page");
+                System.out.println("3. View system statistics");
                 System.out.println("0. Exit");
                 System.out.print("Choose an option: ");
                 String opcao = scanner.nextLine();
 
                 if (opcao.equals("0")) break;
 
+                SearchService service = tryGetBarrel();
+                if (service == null) {
+                    System.out.println("[ERROR] No barrel available.");
+                    continue;
+                }
+
                 if (opcao.equals("1")) {
-                    System.out.print("Insert the term: ");
+                    System.out.print("Enter the term: ");
                     String termo = scanner.nextLine();
-                    List<String> resultados = searchService.search(termo);
-                    
+                    List<String> resultados = service.search(termo);
                     if (resultados.isEmpty()) {
                         System.out.println("No results found.");
                     } else {
@@ -48,7 +49,7 @@ public class SearchClient {
                                 break;
                             }
 
-                            System.out.print("'n' to next page or 'q' to exit: ");
+                            System.out.print("Type 'n' for next page or 'q' to quit: ");
                             String cmd = scanner.nextLine();
                             if (cmd.equalsIgnoreCase("n")) {
                                 page++;
@@ -58,21 +59,21 @@ public class SearchClient {
                         }
                     }
                 } else if (opcao.equals("2")) {
-                    System.out.print("Insert URL to see their backlinks: ");
+                    System.out.print("Enter the URL to view backlinks: ");
                     String url = scanner.nextLine();
-                    Set<String> backlinks = searchService.getBacklinks(url);
+                    Set<String> backlinks = service.getBacklinks(url);
                     if (backlinks.isEmpty()) {
-                        System.out.println("No backlink found.");
+                        System.out.println("No backlinks found.");
                     } else {
                         backlinks.forEach(System.out::println);
                     }
                 } else if (opcao.equals("3")) {
-                    System.out.println("\nSystem stats:");
-                    Map<String, Integer> topSearches = searchService.getTopSearches();
-                    System.out.println("Top 10 searches:");
+                    System.out.println("\nSystem statistics:");
+                    Map<String, Integer> topSearches = service.getTopSearches();
+                    System.out.println("Top 10 most searched terms:");
                     topSearches.forEach((key, value) -> System.out.println("- " + key + ": " + value + " times"));
-                    double avgSearchTime = searchService.getAverageSearchTime();
-                    System.out.println("Time per response: " + avgSearchTime + " ms");
+                    double avgSearchTime = service.getAverageSearchTime();
+                    System.out.println("Average response time: " + avgSearchTime + " ms");
                 }
             }
 
@@ -80,5 +81,21 @@ public class SearchClient {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static SearchService tryGetBarrel() {
+        String[] barrels = {"rmi://localhost/Barrel1", "rmi://localhost/Barrel2"};
+        List<String> list = Arrays.asList(barrels);
+        Collections.shuffle(list);
+
+        for (String address : list) {
+            try {
+                System.out.println("Trying " + address + "...");
+                return (SearchService) Naming.lookup(address);
+            } catch (Exception e) {
+                System.out.println("Failed to connect to " + address);
+            }
+        }
+        return null;
     }
 }
