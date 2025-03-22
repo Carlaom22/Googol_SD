@@ -16,9 +16,7 @@ public class WebCrawler {
     private static final int MAX_PAGES = 50;
 
     public static void main(String[] args) {
-        try {
-            Scanner scanner = new Scanner(System.in);
-
+        try (Scanner scanner = new Scanner(System.in)) {
             while (true) {
                 System.out.print("Enter a URL to index (or type 'exit' to quit): ");
                 String startUrl = scanner.nextLine();
@@ -41,37 +39,32 @@ public class WebCrawler {
                         Document doc = Jsoup.connect(url).get();
                         String text = doc.body().text();
 
+                        List<String> foundLinks = new ArrayList<>();
+                        if (depth < MAX_DEPTH) {
+                            Elements links = doc.select("a[href]");
+                            for (Element link : links) {
+                                String found = link.attr("abs:href");
+                                if (found.startsWith("http") && !visited.contains(found)) {
+                                    foundLinks.add(found);
+                                    queue.add(new URLDepthPair(found, depth + 1));
+                                    visited.add(found);
+                                    System.out.println("Added to queue: " + found);
+                                }
+                            }
+                        }
+
+                        // enviar conteúdo + backlinks numa única chamada
                         for (String address : BarrelRegistry.getBarrelAddresses()) {
                             try {
                                 SearchService searchService = (SearchService) Naming.lookup(address);
-                                searchService.indexPage(url, text);
+                                searchService.indexPage(url, text, foundLinks);
+                                break; // só precisa de um barrel responder
                             } catch (Exception e) {
                                 System.out.println("[ERROR] Failed to contact barrel at " + address);
                             }
                         }
 
                         pagesIndexed++;
-
-                        if (depth < MAX_DEPTH) {
-                            Elements links = doc.select("a[href]");
-                            for (Element link : links) {
-                                String found = link.attr("abs:href");
-                                if (found.startsWith("http") && !visited.contains(found)) {
-                                    queue.add(new URLDepthPair(found, depth + 1));
-                                    visited.add(found);
-                                    System.out.println("Added to queue: " + found);
-
-                                    for (String address : BarrelRegistry.getBarrelAddresses()) {
-                                        try {
-                                            SearchService searchService = (SearchService) Naming.lookup(address);
-                                            searchService.addBacklink(url, found);
-                                        } catch (Exception e) {
-                                            System.out.println("[ERROR] Failed to add backlink at " + address);
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     } catch (IOException e) {
                         System.out.println("Error accessing: " + url);
                     }
@@ -79,8 +72,6 @@ public class WebCrawler {
 
                 System.out.println("Indexing complete! Total pages indexed: " + pagesIndexed);
             }
-
-            scanner.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
