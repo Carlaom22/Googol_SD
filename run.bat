@@ -48,3 +48,5 @@ start cmd /k "cd %BIN_DIR% && java client.SearchClient"
 echo Ready!
 
 endlocal
+
+:: .\run.bat to run the code 
