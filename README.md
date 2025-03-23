@@ -115,4 +115,4 @@ https://pt.wikipedia.org/wiki/Sistemas_Distribuidos
 
 ## 👨‍💻 Autor
 
-Projeto académico desenvolvido para a cadeira de Sistemas Distribuídos.
+EU. Projeto para a cadeira de Sistemas Distribuídos.
