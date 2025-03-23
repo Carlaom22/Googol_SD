@@ -1,0 +1,161 @@
+\documentclass{article}
+\usepackage{graphicx} 
+\usepackage{geometry}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\geometry{a4paper, portrait, margin=1in} 
+\setstretch{1.25}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Sistemas Distribuídos}
+\lhead{Meta 1 - Projeto}
+\rfoot{\thepage}
+
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection.}{1em}{}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+
+    \includegraphics[width=0.4\textwidth]{imagens/dei_thumb.png}
+
+    \vspace{1.5cm}
+    {\LARGE \textbf{Meta 1 - Relatório Técnico} \par}
+    \vspace{0.5cm}
+    \vspace{2.5cm}
+    \textbf{Licenciatura em Engenharia Informática} \\
+    \textbf{Sistemas Distribuídos}
+
+    \vspace{3cm}
+    \begin{tabular}{ll}
+        \textbf{Carlos Soares} & 2020230124, uc2020230124@student.uc.pt \\
+        \textbf{Miguel Machado} & 2020230124, uc2020230124@student.uc.pt 
+    \end{tabular}
+
+    \vfill
+    {\large \today \par}
+\end{titlepage}
+
+\newpage
+
+\section{Introdução}
+Este relatório descreve o desenvolvimento de um sistema distribuído de indexação e pesquisa de páginas web, utilizando Java RMI. O projeto visa aplicar os conceitos de tolerância a falhas, replicação, concorrência e modularidade num ambiente de redes e sistemas distribuídos.
+
+\newpage
+
+\section{Objetivos do Projeto}
+\begin{itemize}
+    \item Permitir ao utilizador pesquisar termos e obter páginas ordenadas por relevância;
+    \item Indexar conteúdos web recursivamente, a partir de links inseridos;
+    \item Consultar backlinks e estatísticas (termos mais pesquisados, tempo médio);
+    \item Assegurar tolerância a falhas e balanceamento entre múltiplos servidores (barrels);
+    \item Permitir execução paralela de crawlers;
+    \item Armazenar dados persistentemente mesmo após falhas ou reinícios.
+\end{itemize}
+
+\newpage
+
+\section{Componentes do Sistema}
+O sistema é composto pelos seguintes módulos:
+
+\begin{itemize}
+    \item \textbf{Cliente (SearchClient)}: Interface textual onde o utilizador pode:
+    \begin{itemize}
+        \item Pesquisar termos;
+        \item Consultar estatísticas e backlinks;
+        \item Adicionar links à fila central de indexação.
+    \end{itemize}
+
+    \item \textbf{Gateway (SearchGateway)}: Encaminha pedidos do cliente para barrels ativos, com tolerância a falhas e balanceamento.
+
+    \item \textbf{Barrels (IndexStorageBarrel)}: Servidores que armazenam os índices invertidos e processam pesquisas. Operam com dados replicados e oferecem persistência via ficheiros.
+
+    \item \textbf{Fila Central (CentralURLQueue)}: Interface RMI responsável por armazenar e fornecer links aos crawlers.
+
+    \item \textbf{Crawler (WebCrawler)}: Consome links da fila, faz scraping da página com JSoup, extrai texto e links e envia para um barrel.
+
+    \item \textbf{LinkAdder}: Aplicação de linha de comando usada para adicionar links à fila.
+\end{itemize}
+
+\newpage
+
+\section{Funcionamento Geral}
+
+\subsection{Fluxo de Indexação}
+\begin{enumerate}
+    \item Utilizador insere um link pelo menu (opção 4);
+    \item O link é adicionado à \textit{CentralURLQueue};
+    \item Um \textit{WebCrawler} ativo consome o link da fila;
+    \item O crawler extrai o texto e os links da página com a biblioteca JSoup;
+    \item A informação é enviada para um barrel disponível;
+    \item O barrel atualiza os índices e armazena backlinks.
+\end{enumerate}
+
+\subsection{Fluxo de Pesquisa}
+\begin{enumerate}
+    \item Utilizador pesquisa um termo pelo cliente;
+    \item A pesquisa é encaminhada à \textit{SearchGateway};
+    \item A gateway escolhe um barrel disponível e envia o pedido;
+    \item O barrel devolve os resultados ordenados por backlinks;
+    \item O cliente apresenta os resultados 10 por página.
+\end{enumerate}
+
+\subsection{Outras Funcionalidades}
+\begin{itemize}
+    \item Estatísticas de uso: top 10 termos e tempo médio de resposta;
+    \item Consulta de backlinks de uma URL;
+    \item Interface tolerante a falhas: o sistema funciona mesmo que um barrel falhe;
+    \item Persistência com ficheiros .ser e .txt;
+    \item Crawlers paralelos podem ser iniciados manualmente.
+\end{itemize}
+
+\newpage
+
+\section{Tolerância a Falhas e Confiabilidade}
+\begin{itemize}
+    \item A gateway tenta múltiplos barrels em ordem aleatória;
+    \item Se um barrel falhar, o outro é tentado automaticamente;
+    \item Os barrels são réplicas: ambos armazenam os mesmos dados;
+    \item A fila central evita duplicação de indexação entre crawlers;
+    \item Dados são recuperados ao reiniciar qualquer barrel;
+    \item Cada componente é modular e independente.
+\end{itemize}
+
+\newpage
+
+\section{Testes Realizados}
+\begin{itemize}
+    \item Adição de links via LinkAdder → verificação na fila e no WebCrawler;
+    \item Verificação da indexação no terminal dos barrels;
+    \item Pesquisa de termos e análise dos resultados;
+    \item Consulta de backlinks funcionais;
+    \item Simulação de falha de barrel → continuidade do sistema;
+    \item Reinício de barrel → dados anteriores carregados corretamente;
+    \item Múltiplos crawlers → sem duplicação de tarefas.
+\end{itemize}
+
+\newpage
+
+\section{Divisão de Trabalho}
+\begin{itemize}
+    \item \textbf{Carlos Soares}: 
+    \item \textbf{Miguel Machado}: 
+    \item \textbf{Ambos}: 
+\end{itemize}
+
+\newpage
+
+\section{Conclusão}
+O sistema cumpre todos os requisitos funcionais e técnicos da Meta 1. Foi testado com sucesso em cenários de uso real e simulação de falhas. A comunicação via RMI, a modularidade dos componentes, e a facilidade de extensão fazem deste projeto uma base sólida para fases futuras.
+
+\end{document}
