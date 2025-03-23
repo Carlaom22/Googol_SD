@@ -9,17 +9,17 @@ public class LinkAdder {
         try {
             CentralURLQueue queue = (CentralURLQueue) Naming.lookup("rmi://localhost/URLQueue");
             Scanner scanner = new Scanner(System.in);
-            System.out.println("Adicionar links à fila central");
+            System.out.println("Adding links to central queue");
             while (true) {
-                System.out.print("Digite a URL (ou 'sair'): ");
+                System.out.print("Enter URL (or 'exit'): ");
                 String url = scanner.nextLine();
-                if (url.equalsIgnoreCase("sair")) break;
+                if (url.equalsIgnoreCase("exit")) break;
                 queue.addUrl(url);
-                System.out.println("URL adicionada com sucesso.");
+                System.out.println("URL added successfully.");
             }
             scanner.close();
         } catch (Exception e) {
-            System.out.println("[ERRO] Não foi possível ligar à fila central.");
+            System.out.println("[ERROR] Unable to connect to central queue.");
             e.printStackTrace();
         }
     }

@@ -15,10 +15,10 @@ public class InvertedIndex implements Serializable {
     private long totalSearches = 0;
 
     public void add(String url, String content) {
-        String[] palavras = content.toLowerCase().split("\\W+");
-        for (String palavra : palavras) {
-            index.putIfAbsent(palavra, new HashSet<>());
-            index.get(palavra).add(url);
+        String[] words = content.toLowerCase().split("\\W+");
+        for (String word : words) {
+            index.putIfAbsent(word, new HashSet<>());
+            index.get(word).add(url);
         }
     }
 
@@ -30,12 +30,12 @@ public class InvertedIndex implements Serializable {
         }
     }
 
-    public List<String> search(String palavra) {
+    public List<String> search(String word) {
         long startTime = System.nanoTime();
-        Set<String> results = index.getOrDefault(palavra, new HashSet<>());
+        Set<String> results = index.getOrDefault(word, new HashSet<>());
         List<String> sortedResults = new ArrayList<>(results);
         sortedResults.sort((a, b) -> backlinks.getOrDefault(b, 0) - backlinks.getOrDefault(a, 0));
-        searchCount.put(palavra, searchCount.getOrDefault(palavra, 0) + 1);
+        searchCount.put(word, searchCount.getOrDefault(word, 0) + 1);
         long endTime = System.nanoTime();
         totalSearchTime += (endTime - startTime);
         totalSearches++;
@@ -61,9 +61,9 @@ public class InvertedIndex implements Serializable {
     public void saveToDisk(String filename) {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
             out.writeObject(this);
-            System.out.println("[INFO] Indice salvo em disco com sucesso.");
+            System.out.println("[INFO] Index successfully saved to disk.");
         } catch (IOException e) {
-            System.out.println("[ERRO] Falha ao salvar índice em disco.");
+            System.out.println("[ERROR] Failed to save index to disk.");
             e.printStackTrace();
         }
 
@@ -73,40 +73,40 @@ public class InvertedIndex implements Serializable {
     private void saveToText(String filename) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
             writer.println("==== INDEX ====");
-            for (String palavra : index.keySet()) {
-                writer.println("Palavra: " + palavra);
-                for (String url : index.get(palavra)) {
+            for (String word : index.keySet()) {
+                writer.println("Word: " + word);
+                for (String url : index.get(word)) {
                     writer.println("  - " + url);
                 }
             }
 
             writer.println("\n==== BACKLINKS ====");
             for (String url : backlinkMap.keySet()) {
-                writer.println("Página: " + url + " (Total: " + backlinks.getOrDefault(url, 0) + ")");
+                writer.println("Page: " + url + " (Total: " + backlinks.getOrDefault(url, 0) + ")");
                 for (String ref : backlinkMap.get(url)) {
                     writer.println("  <- " + ref);
                 }
             }
 
-            writer.println("\n==== TOP BUSCAS ====");
+            writer.println("\n==== TOP SEARCHES ====");
             for (Map.Entry<String, Integer> entry : getTopSearches().entrySet()) {
-                writer.println(entry.getKey() + ": " + entry.getValue() + " vezes");
+                writer.println(entry.getKey() + ": " + entry.getValue() + " times");
             }
 
-            writer.println("\nMédia de tempo de resposta: " + getAverageSearchTime() + " ms");
-            System.out.println("[INFO] Indice salvo também em formato .txt.");
+            writer.println("\nAverage response time: " + getAverageSearchTime() + " ms");
+            System.out.println("[INFO] Index also saved in .txt format.");
         } catch (IOException e) {
-            System.out.println("[ERRO] Falha ao salvar índice como .txt.");
+            System.out.println("[ERROR] Failed to save index as .txt.");
             e.printStackTrace();
         }
     }
 
     public static InvertedIndex loadFromDisk(String filename) {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
-            System.out.println("[INFO] Indice carregado do disco com sucesso.");
+            System.out.println("[INFO] Index successfully loaded from disk.");
             return (InvertedIndex) in.readObject();
         } catch (Exception e) {
-            System.out.println("[INFO] Nenhum índice anterior encontrado. Criando novo.");
+            System.out.println("[INFO] No previous index found. Creating a new one.");
             return new InvertedIndex();
         }
     }

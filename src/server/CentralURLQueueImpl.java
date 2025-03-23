@@ -20,9 +20,9 @@ public class CentralURLQueueImpl extends UnicastRemoteObject implements CentralU
         if (!visited.contains(url)) {
             queue.add(url);
             visited.add(url);
-            System.out.println("[CentralURLQueue] URL adicionada: " + url);
+            System.out.println("[CentralURLQueue] URL added: " + url);
         } else {
-            System.out.println("[CentralURLQueue] Ignorada (já visitada): " + url);
+            System.out.println("[CentralURLQueue] Ignored (already visited): " + url);
         }
     }
 
@@ -30,7 +30,7 @@ public class CentralURLQueueImpl extends UnicastRemoteObject implements CentralU
     public synchronized String getNextUrl() throws RemoteException {
         String next = queue.poll();
         if (next != null) {
-            System.out.println("[CentralURLQueue] Enviando URL para crawler: " + next);
+            System.out.println("[CentralURLQueue] Sending URL to crawler: " + next);
         }
         return next;
     }

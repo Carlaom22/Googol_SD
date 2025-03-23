@@ -8,16 +8,16 @@ public class SearchGatewayServer {
         try {
             try {
                 LocateRegistry.createRegistry(1099);
-                System.out.println("[Gateway] RMI Registry iniciado.");
+                System.out.println("[Gateway] RMI Registry started.");
             } catch (Exception e) {
-                System.out.println("[Gateway] RMI Registry já estava ativo.");
+                System.out.println("[Gateway] RMI Registry was already active.");
             }
 
             SearchGateway gateway = new SearchGatewayImpl();
             Naming.rebind("rmi://localhost/SearchGateway", gateway);
-            System.out.println("[Gateway] SearchGateway disponível em rmi://localhost/SearchGateway");
+            System.out.println("[Gateway] SearchGateway available at rmi://localhost/SearchGateway");
         } catch (Exception e) {
-            System.out.println("[ERRO] Falha ao iniciar o servidor da gateway.");
+            System.out.println("[ERROR] Failed to start the gateway server.");
             e.printStackTrace();
         }
     }

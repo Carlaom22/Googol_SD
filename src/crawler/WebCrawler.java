@@ -19,20 +19,20 @@ public class WebCrawler {
 
     public static void main(String[] args) {
         try {
-            System.out.println("[DEBUG] Tentando ligar à fila...");
+            System.out.println("[DEBUG] Trying to connect to the queue...");
             CentralURLQueue queue = (CentralURLQueue) Naming.lookup("rmi://localhost/URLQueue");
-            System.out.println("[DEBUG] Ligado à fila com sucesso.");
+            System.out.println("[DEBUG] Connected to the queue successfully.");
 
             while (true) {
-                System.out.println("[DEBUG] Solicitando próximo link da fila...");
+                System.out.println("[DEBUG] Requesting next link from the queue...");
                 String startUrl = queue.getNextUrl();
                 if (startUrl == null) {
-                    System.out.println("[DEBUG] Fila vazia. Aguardando...");
+                    System.out.println("[DEBUG] Queue is empty. Waiting...");
                     Thread.sleep(2000);
                     continue;
                 }
 
-                System.out.println("[DEBUG] Recebido da fila: " + startUrl);
+                System.out.println("[DEBUG] Received from queue: " + startUrl);
 
                 Queue<URLDepthPair> crawlQueue = new LinkedList<>();
                 Set<String> visited = new HashSet<>();
@@ -46,7 +46,7 @@ public class WebCrawler {
                     String url = current.url;
                     int depth = current.depth;
 
-                    System.out.println("[DEBUG] Indexando: " + url + " | Profundidade: " + depth);
+                    System.out.println("[DEBUG] Indexing: " + url + " | Depth: " + depth);
                     try {
                         Document doc = Jsoup.connect(url).get();
                         String text = doc.body().text();
@@ -60,7 +60,7 @@ public class WebCrawler {
                                     foundLinks.add(found);
                                     crawlQueue.add(new URLDepthPair(found, depth + 1));
                                     visited.add(found);
-                                    System.out.println("[DEBUG] Link encontrado: " + found);
+                                    System.out.println("[DEBUG] Found link: " + found);
                                 }
                             }
                         }
@@ -68,35 +68,35 @@ public class WebCrawler {
                         boolean sent = false;
                         for (String address : BarrelRegistry.getBarrelAddresses()) {
                             try {
-                                System.out.println("[DEBUG] Tentando enviar para barrel: " + address);
+                                System.out.println("[DEBUG] Trying to send to barrel: " + address);
                                 SearchService service = (SearchService) Naming.lookup(address);
                                 service.indexPage(url, text, foundLinks);
-                                System.out.println("[DEBUG] Enviado para: " + address);
+                                System.out.println("[DEBUG] Sent to: " + address);
                                 sent = true;
                                 break;
                             } catch (Exception e) {
-                                System.out.println("[DEBUG] Falha ao contactar: " + address);
+                                System.out.println("[DEBUG] Failed to contact: " + address);
                                 e.printStackTrace();
                             }
                         }
 
                         if (!sent) {
-                            System.out.println("[DEBUG] Nenhum barrel disponível para: " + url);
+                            System.out.println("[DEBUG] No barrel available for: " + url);
                         }
 
                         pagesIndexed++;
 
                     } catch (IOException e) {
-                        System.out.println("[DEBUG] ERRO ao aceder: " + url);
+                        System.out.println("[DEBUG] ERROR accessing: " + url);
                         e.printStackTrace();
                     }
                 }
 
-                System.out.println("[DEBUG] Indexação completa para: " + startUrl);
+                System.out.println("[DEBUG] Indexing complete for: " + startUrl);
             }
 
         } catch (Exception e) {
-            System.out.println("[DEBUG] ERRO ao ligar à fila:");
+            System.out.println("[DEBUG] ERROR connecting to queue:");
             e.printStackTrace();
         }
     }

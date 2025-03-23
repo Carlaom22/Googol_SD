@@ -17,22 +17,22 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
 
         for (String address : list) {
             try {
-                System.out.println("[Gateway] Tentando conectar a " + address);
+                System.out.println("[Gateway] Trying to connect to " + address);
                 SearchService barrel = (SearchService) Naming.lookup(address);
-                System.out.println("[Gateway] Conectado com sucesso a " + address);
+                System.out.println("[Gateway] Successfully connected to " + address);
                 return barrel;
             } catch (Exception e) {
-                System.out.println("[Gateway] Falha ao conectar a " + address);
+                System.out.println("[Gateway] Failed to connect to " + address);
             }
         }
 
-        System.out.println("[Gateway] Nenhum barrel disponível.");
+        System.out.println("[Gateway] No barrel available.");
         return null;
     }
 
-    public List<String> search(String termo) throws RemoteException {
+    public List<String> search(String term) throws RemoteException {
         SearchService barrel = getAvailableBarrel();
-        if (barrel != null) return barrel.search(termo);
+        if (barrel != null) return barrel.search(term);
         return List.of();
     }
 
