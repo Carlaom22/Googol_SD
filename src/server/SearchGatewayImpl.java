@@ -17,12 +17,12 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
 
         for (String address : list) {
             try {
-                System.out.println("[Gateway] Tentando conectar a: " + address);
+                System.out.println("[Gateway] Tentando conectar a " + address);
                 SearchService barrel = (SearchService) Naming.lookup(address);
-                System.out.println("[Gateway] Conectado a: " + address);
+                System.out.println("[Gateway] Conectado com sucesso a " + address);
                 return barrel;
             } catch (Exception e) {
-                System.out.println("[Gateway] Falha ao conectar a: " + address);
+                System.out.println("[Gateway] Falha ao conectar a " + address);
             }
         }
 
@@ -31,32 +31,24 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
     }
 
     public List<String> search(String termo) throws RemoteException {
-        System.out.println("[Gateway] Pedido de pesquisa: " + termo);
         SearchService barrel = getAvailableBarrel();
-        if (barrel != null) {
-            List<String> resultados = barrel.search(termo);
-            System.out.println("[Gateway] Resultados devolvidos: " + resultados.size());
-            return resultados;
-        }
+        if (barrel != null) return barrel.search(termo);
         return List.of();
     }
 
     public Set<String> getBacklinks(String url) throws RemoteException {
-        System.out.println("[Gateway] Pedido de backlinks para: " + url);
         SearchService barrel = getAvailableBarrel();
         if (barrel != null) return barrel.getBacklinks(url);
         return Set.of();
     }
 
     public Map<String, Integer> getTopSearches() throws RemoteException {
-        System.out.println("[Gateway] Pedido de top pesquisas");
         SearchService barrel = getAvailableBarrel();
         if (barrel != null) return barrel.getTopSearches();
         return Map.of();
     }
 
     public double getAverageSearchTime() throws RemoteException {
-        System.out.println("[Gateway] Pedido de tempo médio de resposta");
         SearchService barrel = getAvailableBarrel();
         if (barrel != null) return barrel.getAverageSearchTime();
         return -1;

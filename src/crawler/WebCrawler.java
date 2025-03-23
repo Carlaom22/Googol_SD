@@ -4,37 +4,49 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import java.io.IOException;
-import java.rmi.Naming;
-import java.util.*;
 
 import server.SearchService;
 import server.BarrelRegistry;
+import server.CentralURLQueue;
+
+import java.io.IOException;
+import java.rmi.Naming;
+import java.util.*;
 
 public class WebCrawler {
     private static final int MAX_DEPTH = 2;
     private static final int MAX_PAGES = 50;
 
     public static void main(String[] args) {
-        try (Scanner scanner = new Scanner(System.in)) {
-            while (true) {
-                System.out.print("Enter a URL to index (or type 'exit' to quit): ");
-                String startUrl = scanner.nextLine();
-                if (startUrl.equalsIgnoreCase("exit")) break;
+        try {
+            System.out.println("[DEBUG] Tentando ligar à fila...");
+            CentralURLQueue queue = (CentralURLQueue) Naming.lookup("rmi://localhost/URLQueue");
+            System.out.println("[DEBUG] Ligado à fila com sucesso.");
 
-                Queue<URLDepthPair> queue = new LinkedList<>();
+            while (true) {
+                System.out.println("[DEBUG] Solicitando próximo link da fila...");
+                String startUrl = queue.getNextUrl();
+                if (startUrl == null) {
+                    System.out.println("[DEBUG] Fila vazia. Aguardando...");
+                    Thread.sleep(2000);
+                    continue;
+                }
+
+                System.out.println("[DEBUG] Recebido da fila: " + startUrl);
+
+                Queue<URLDepthPair> crawlQueue = new LinkedList<>();
                 Set<String> visited = new HashSet<>();
-                queue.add(new URLDepthPair(startUrl, 0));
+                crawlQueue.add(new URLDepthPair(startUrl, 0));
                 visited.add(startUrl);
 
                 int pagesIndexed = 0;
 
-                while (!queue.isEmpty() && pagesIndexed < MAX_PAGES) {
-                    URLDepthPair current = queue.poll();
+                while (!crawlQueue.isEmpty() && pagesIndexed < MAX_PAGES) {
+                    URLDepthPair current = crawlQueue.poll();
                     String url = current.url;
                     int depth = current.depth;
 
-                    System.out.println("\nIndexing: " + url + " (Depth: " + depth + ")");
+                    System.out.println("[DEBUG] Indexando: " + url + " | Profundidade: " + depth);
                     try {
                         Document doc = Jsoup.connect(url).get();
                         String text = doc.body().text();
@@ -46,33 +58,45 @@ public class WebCrawler {
                                 String found = link.attr("abs:href");
                                 if (found.startsWith("http") && !visited.contains(found)) {
                                     foundLinks.add(found);
-                                    queue.add(new URLDepthPair(found, depth + 1));
+                                    crawlQueue.add(new URLDepthPair(found, depth + 1));
                                     visited.add(found);
-                                    System.out.println("Added to queue: " + found);
+                                    System.out.println("[DEBUG] Link encontrado: " + found);
                                 }
                             }
                         }
 
-                        // enviar conteúdo + backlinks numa única chamada
+                        boolean sent = false;
                         for (String address : BarrelRegistry.getBarrelAddresses()) {
                             try {
-                                SearchService searchService = (SearchService) Naming.lookup(address);
-                                searchService.indexPage(url, text, foundLinks);
-                                break; // só precisa de um barrel responder
+                                System.out.println("[DEBUG] Tentando enviar para barrel: " + address);
+                                SearchService service = (SearchService) Naming.lookup(address);
+                                service.indexPage(url, text, foundLinks);
+                                System.out.println("[DEBUG] Enviado para: " + address);
+                                sent = true;
+                                break;
                             } catch (Exception e) {
-                                System.out.println("[ERROR] Failed to contact barrel at " + address);
+                                System.out.println("[DEBUG] Falha ao contactar: " + address);
+                                e.printStackTrace();
                             }
                         }
 
+                        if (!sent) {
+                            System.out.println("[DEBUG] Nenhum barrel disponível para: " + url);
+                        }
+
                         pagesIndexed++;
+
                     } catch (IOException e) {
-                        System.out.println("Error accessing: " + url);
+                        System.out.println("[DEBUG] ERRO ao aceder: " + url);
+                        e.printStackTrace();
                     }
                 }
 
-                System.out.println("Indexing complete! Total pages indexed: " + pagesIndexed);
+                System.out.println("[DEBUG] Indexação completa para: " + startUrl);
             }
+
         } catch (Exception e) {
+            System.out.println("[DEBUG] ERRO ao ligar à fila:");
             e.printStackTrace();
         }
     }

@@ -2,9 +2,9 @@ package server;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.HashSet;
 import java.util.Set;
 
 public class CentralURLQueueImpl extends UnicastRemoteObject implements CentralURLQueue {
@@ -20,12 +20,18 @@ public class CentralURLQueueImpl extends UnicastRemoteObject implements CentralU
         if (!visited.contains(url)) {
             queue.add(url);
             visited.add(url);
-            System.out.println("URL adicionada: " + url);
+            System.out.println("[CentralURLQueue] URL adicionada: " + url);
+        } else {
+            System.out.println("[CentralURLQueue] Ignorada (já visitada): " + url);
         }
     }
 
     @Override
     public synchronized String getNextUrl() throws RemoteException {
-        return queue.poll();
+        String next = queue.poll();
+        if (next != null) {
+            System.out.println("[CentralURLQueue] Enviando URL para crawler: " + next);
+        }
+        return next;
     }
 }

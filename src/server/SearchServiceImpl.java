@@ -16,14 +16,13 @@ public class SearchServiceImpl extends UnicastRemoteObject implements SearchServ
         this.index = index;
     }
 
-    // Indexação simples (cliente usa esta versão)
     @Override
     public void indexPage(String url, String content) throws RemoteException {
-        System.out.println("[Barrel] Indexando página (sem backlinks): " + url);
+        System.out.println("[Barrel] Indexando (sem links): " + url);
         index.add(url, content);
     }
 
-    // Indexação completa com backlinks (WebCrawler usa esta)
+    @Override
     public void indexPage(String url, String content, List<String> links) throws RemoteException {
         System.out.println("[Barrel] Indexando página: " + url);
         index.add(url, content);
@@ -33,15 +32,13 @@ public class SearchServiceImpl extends UnicastRemoteObject implements SearchServ
                 index.addBacklink(link, url);
                 System.out.println("[Barrel] Backlink registado: " + link + " - " + url);
             }
-        } else {
-            System.out.println("[Barrel] Nenhum backlink fornecido.");
         }
     }
 
     @Override
     public void addBacklink(String fromUrl, String toUrl) throws RemoteException {
         index.addBacklink(fromUrl, toUrl);
-        System.out.println("[Barrel] Backlink direto adicionado: " + fromUrl + " → " + toUrl);
+        System.out.println("[Barrel] Backlink direto adicionado: " + fromUrl + " - " + toUrl);
     }
 
     @Override

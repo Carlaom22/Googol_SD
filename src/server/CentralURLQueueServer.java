@@ -8,15 +8,16 @@ public class CentralURLQueueServer {
         try {
             try {
                 LocateRegistry.createRegistry(1099);
-                System.out.println("[INFO] RMI Registry iniciado.");
+                System.out.println("[Fila] RMI Registry iniciado.");
             } catch (Exception e) {
-                System.out.println("[INFO] RMI Registry já estava em execução.");
+                System.out.println("[Fila] RMI Registry já estava em execução.");
             }
 
-            CentralURLQueue queue = new CentralURLQueueImpl();
-            Naming.rebind("rmi://localhost/URLQueue", queue);
-            System.out.println("CentralURLQueue ativa.");
+            CentralURLQueue fila = new CentralURLQueueImpl();
+            Naming.rebind("rmi://localhost/URLQueue", fila);
+            System.out.println("[Fila] CentralURLQueue disponível em rmi://localhost/URLQueue");
         } catch (Exception e) {
+            System.out.println("[ERRO] Falha ao iniciar o servidor da fila central.");
             e.printStackTrace();
         }
     }
