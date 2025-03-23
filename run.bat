@@ -6,7 +6,7 @@ set BIN_DIR=bin
 
 if not exist %BIN_DIR% mkdir %BIN_DIR%
 
-echo Compilando tudo...
+echo Compilaing ...
 javac -d %BIN_DIR% -cp lib\jsoup-1.18.3.jar -sourcepath %SRC_DIR% ^
     %SRC_DIR%\client\SearchClient.java ^
     %SRC_DIR%\client\LinkAdder.java ^
@@ -24,43 +24,43 @@ javac -d %BIN_DIR% -cp lib\jsoup-1.18.3.jar -sourcepath %SRC_DIR% ^
     %SRC_DIR%\server\SearchGatewayServer.java
 
 if %ERRORLEVEL% NEQ 0 (
-    echo Erro na compilação.
+    echo Error while compiling.
     exit /b %ERRORLEVEL%
 )
 
-echo Compilado com sucesso.
+echo Compiled with success.
 
 :: Iniciar fila central
-echo Iniciando CentralURLQueueServer...
+echo Starting CentralURLQueueServer...
 start cmd /k "cd %BIN_DIR% && java server.CentralURLQueueServer"
 
 timeout /t 2
 
 :: Iniciar gateway
-echo Iniciando SearchGatewayServer...
+echo Starting SearchGatewayServer...
 start cmd /k "cd %BIN_DIR% && java server.SearchGatewayServer"
 
 timeout /t 2
 
 :: Iniciar barrels
-echo Iniciando Barrel 1...
+echo Starting Barrel 1...
 start cmd /k "cd %BIN_DIR% && java index.IndexStorageBarrel1"
 timeout /t 1
 
-echo Iniciando Barrel 2...
+echo Starting Barrel 2...
 start cmd /k "cd %BIN_DIR% && java index.IndexStorageBarrel2"
 timeout /t 1
 
 :: Iniciar cliente
-echo Iniciando SearchClient...
+echo Starting SearchClient...
 start cmd /k "cd %BIN_DIR% && java client.SearchClient"
 
 timeout /t 2
 
 :: Iniciar WebCrawler com classpath da biblioteca JSoup
-echo Iniciando WebCrawler...
+echo Starting WebCrawler...
 start cmd /k "cd bin && java -cp .;../lib/jsoup-1.18.3.jar crawler.WebCrawler"
 
-echo Pronto! Todos os serviços estão ativos.
+echo Ready!
 
 endlocal
