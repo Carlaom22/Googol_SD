@@ -16,7 +16,7 @@ public class SearchClient {
                 System.out.println("3. See stats");
                 System.out.println("4. Add URL to index");
                 System.out.println("0. Exit");
-                System.out.print("Escolha uma opção: ");
+                System.out.print("Choose an option: ");
                 String opcao = scanner.nextLine();
 
                 if (opcao.equals("0")) break;
