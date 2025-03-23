@@ -6,7 +6,7 @@ set BIN_DIR=bin
 
 if not exist %BIN_DIR% mkdir %BIN_DIR%
 
-echo Compilaing ...
+echo Compiling ...
 javac -d %BIN_DIR% -cp lib\jsoup-1.18.3.jar -sourcepath %SRC_DIR% ^
     %SRC_DIR%\client\SearchClient.java ^
     %SRC_DIR%\client\LinkAdder.java ^
