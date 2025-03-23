@@ -65,22 +65,22 @@ public class WebCrawler {
                             }
                         }
 
-                        boolean sent = false;
+                        // Enviar para todos os barrels (replicação)
+                        boolean atLeastOneSent = false;
                         for (String address : BarrelRegistry.getBarrelAddresses()) {
                             try {
                                 System.out.println("[DEBUG] Trying to send to barrel: " + address);
                                 SearchService service = (SearchService) Naming.lookup(address);
                                 service.indexPage(url, text, foundLinks);
                                 System.out.println("[DEBUG] Sent to: " + address);
-                                sent = true;
-                                break;
+                                atLeastOneSent = true;
                             } catch (Exception e) {
                                 System.out.println("[DEBUG] Failed to contact: " + address);
                                 e.printStackTrace();
                             }
                         }
 
-                        if (!sent) {
+                        if (!atLeastOneSent) {
                             System.out.println("[DEBUG] No barrel available for: " + url);
                         }
 

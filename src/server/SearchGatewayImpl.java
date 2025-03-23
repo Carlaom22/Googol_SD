@@ -6,51 +6,77 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
 public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGateway {
+    private final List<String> barrels;
+    private int lastUsedIndex = -1;
+
     public SearchGatewayImpl() throws RemoteException {
         super();
+        barrels = new ArrayList<>(List.of(
+            "rmi://localhost/Barrel1",
+            "rmi://localhost/Barrel2"
+        ));
     }
 
-    private SearchService getAvailableBarrel() {
-        String[] barrels = {"rmi://localhost/Barrel1", "rmi://localhost/Barrel2"};
-        List<String> list = Arrays.asList(barrels);
-        Collections.shuffle(list);
-
-        for (String address : list) {
+    private synchronized String getNextBarrelAddress() {
+        int attempts = 0;
+        while (attempts < barrels.size()) {
+            lastUsedIndex = (lastUsedIndex + 1) % barrels.size();
+            String address = barrels.get(lastUsedIndex);
             try {
-                System.out.println("[Gateway] Trying to connect to " + address);
-                SearchService barrel = (SearchService) Naming.lookup(address);
-                System.out.println("[Gateway] Successfully connected to " + address);
-                return barrel;
+                Naming.lookup(address); // só testar ligação
+                return address;
             } catch (Exception e) {
-                System.out.println("[Gateway] Failed to connect to " + address);
+                System.out.println("[Gateway] Barrel offline: " + address);
+                attempts++;
             }
         }
+        return null;
+    }
 
-        System.out.println("[Gateway] No barrel available.");
+    private <T> T tryBarrels(FunctionWrapper<T> fn, String actionName) {
+        List<Integer> tried = new ArrayList<>();
+        int attempts = 0;
+        while (attempts < barrels.size()) {
+            String address = getNextBarrelAddress();
+            if (address == null || tried.contains(lastUsedIndex)) {
+                attempts++;
+                continue;
+            }
+            tried.add(lastUsedIndex);
+            try {
+                SearchService barrel = (SearchService) Naming.lookup(address);
+                return fn.apply(barrel);
+            } catch (Exception e) {
+                System.out.println("[Gateway] " + actionName + " failed on " + address);
+            }
+            attempts++;
+        }
+        System.out.println("[Gateway] All barrels failed for " + actionName);
         return null;
     }
 
     public List<String> search(String term) throws RemoteException {
-        SearchService barrel = getAvailableBarrel();
-        if (barrel != null) return barrel.search(term);
-        return List.of();
+        List<String> result = tryBarrels(barrel -> barrel.search(term), "search");
+        return result != null ? result : List.of();
     }
 
     public Set<String> getBacklinks(String url) throws RemoteException {
-        SearchService barrel = getAvailableBarrel();
-        if (barrel != null) return barrel.getBacklinks(url);
-        return Set.of();
+        Set<String> result = tryBarrels(barrel -> barrel.getBacklinks(url), "getBacklinks");
+        return result != null ? result : Set.of();
     }
 
     public Map<String, Integer> getTopSearches() throws RemoteException {
-        SearchService barrel = getAvailableBarrel();
-        if (barrel != null) return barrel.getTopSearches();
-        return Map.of();
+        Map<String, Integer> result = tryBarrels(barrel -> barrel.getTopSearches(), "getTopSearches");
+        return result != null ? result : Map.of();
     }
 
     public double getAverageSearchTime() throws RemoteException {
-        SearchService barrel = getAvailableBarrel();
-        if (barrel != null) return barrel.getAverageSearchTime();
-        return -1;
+        Double result = tryBarrels(barrel -> barrel.getAverageSearchTime(), "getAverageSearchTime");
+        return result != null ? result : -1;
+    }
+
+    @FunctionalInterface
+    private interface FunctionWrapper<T> {
+        T apply(SearchService barrel) throws Exception;
     }
 }
