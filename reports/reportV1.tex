@@ -148,14 +148,94 @@ O sistema é composto pelos seguintes módulos:
 
 \section{Divisão de Trabalho}
 \begin{itemize}
-    \item \textbf{Carlos Soares}: 
-    \item \textbf{Miguel Machado}: 
-    \item \textbf{Ambos}: 
+    \item \textbf{Carlos Soares}: Cliente, gateway, balanceamento e gestão de RMI;
+    \item \textbf{Miguel Machado}: WebCrawler, fila central, persistência e replicação;
+    \item \textbf{Ambos}: Integração, testes, relatório e apresentação.
 \end{itemize}
 
 \newpage
 
 \section{Conclusão}
 O sistema cumpre todos os requisitos funcionais e técnicos da Meta 1. Foi testado com sucesso em cenários de uso real e simulação de falhas. A comunicação via RMI, a modularidade dos componentes, e a facilidade de extensão fazem deste projeto uma base sólida para fases futuras.
+
+
+\maketitle
+
+\section{Iniciar o Sistema}
+Executar o seguinte comando na raiz do projeto:
+
+\begin{itemize}
+  \item \texttt{.\textbackslash run.bat}
+\end{itemize}
+
+Este comando compila todos os ficheiros e inicia:
+\begin{itemize}
+  \item Fila central de URLs (\texttt{CentralURLQueueServer})
+  \item Gateway de pesquisa (\texttt{SearchGatewayServer})
+  \item Barrels (\texttt{IndexStorageBarrel1} e \texttt{IndexStorageBarrel2})
+  \item Cliente de pesquisa (\texttt{SearchClient})
+  \item Crawler opcional
+\end{itemize}
+
+\section{Utilizar o Cliente de Pesquisa}
+
+Menu apresentado ao utilizador:
+
+\begin{itemize}
+  \item 1. Pesquisar termo
+  \item 2. Ver backlinks de uma página
+  \item 3. Estatísticas do sistema
+  \item 4. Adicionar URL para indexação
+  \item 5. Ver barrels ativos
+  \item 0. Sair
+\end{itemize}
+
+\section{Adicionar um URL (Opção 4)}
+
+\begin{enumerate}
+  \item Ao escolher a opção 4, abre-se o \texttt{LinkAdder} num terminal separado.
+  \item O utilizador escreve um URL. Exemplo: \texttt{https://pt.wikipedia.org/wiki/Java}
+  \item Esse link é enviado para a fila de indexação.
+  \item Automaticamente, uma nova \textbf{Thread} é criada que lança um \texttt{WebCrawler} dedicado.
+  \item O crawler indexa o conteúdo da página, extrai links e envia os dados para os barrels.
+\end{enumerate}
+
+Cada novo link inserido cria um novo \texttt{WebCrawler} independente.
+
+\section{Pesquisar Termos (Opção 1)}
+\begin{itemize}
+  \item Termos são enviados para o \texttt{SearchGateway}, que distribui pedidos entre os barrels (round-robin).
+  \item Os resultados são ordenados por número de backlinks.
+  \item São apresentados 10 por página.
+\end{itemize}
+
+\section{Outras Funcionalidades}
+\begin{itemize}
+  \item \textbf{Opção 2:} Mostra backlinks de uma URL.
+  \item \textbf{Opção 3:} Mostra top 10 de termos pesquisados e tempo médio de resposta.
+  \item \textbf{Opção 5:} Mostra quais barrels estão ativos no momento.
+\end{itemize}
+
+\section{Tolerância a Falhas}
+\begin{itemize}
+  \item Se um barrel falhar, o gateway utiliza outro automaticamente.
+  \item A indexação é replicada para todos os barrels ativos (multicast lógico via RMI).
+\end{itemize}
+
+\section{Persistência e Threads}
+\begin{itemize}
+  \item Barrels guardam automaticamente os dados periodicamente com \texttt{Threads}.
+  \item Crawlers são lançados via \texttt{Thread} no \texttt{LinkAdder}, garantindo paralelismo real.
+\end{itemize}
+
+\section{Testar o Sistema}
+\begin{itemize}
+  \item Adicionar múltiplos links via \texttt{LinkAdder}
+  \item Observar novos terminais de crawlers a surgir
+  \item Pesquisar termos e observar respostas
+  \item Fechar um barrel e confirmar que o outro responde normalmente
+\end{itemize}
+
+
 
 \end{document}
