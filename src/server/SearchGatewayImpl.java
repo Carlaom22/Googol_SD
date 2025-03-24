@@ -23,7 +23,7 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
             lastUsedIndex = (lastUsedIndex + 1) % barrels.size();
             String address = barrels.get(lastUsedIndex);
             try {
-                Naming.lookup(address); // só testar ligação
+                Naming.lookup(address);
                 return address;
             } catch (Exception e) {
                 System.out.println("[Gateway] Barrel offline: " + address);
@@ -73,6 +73,17 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
     public double getAverageSearchTime() throws RemoteException {
         Double result = tryBarrels(barrel -> barrel.getAverageSearchTime(), "getAverageSearchTime");
         return result != null ? result : -1;
+    }
+
+    public List<String> getActiveBarrels() throws RemoteException {
+        List<String> active = new ArrayList<>();
+        for (String address : barrels) {
+            try {
+                Naming.lookup(address);
+                active.add(address);
+            } catch (Exception ignored) {}
+        }
+        return active;
     }
 
     @FunctionalInterface

@@ -11,4 +11,5 @@ public interface SearchGateway extends Remote {
     Set<String> getBacklinks(String url) throws RemoteException;
     Map<String, Integer> getTopSearches() throws RemoteException;
     double getAverageSearchTime() throws RemoteException;
+    List<String> getActiveBarrels() throws RemoteException;
 }
