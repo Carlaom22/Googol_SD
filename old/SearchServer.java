@@ -15,13 +15,13 @@ public class SearchServer {
                 System.out.println("3. View system statistics");
                 System.out.println("0. Exit");
                 System.out.print("Choose an option: ");
-                String opcao = scanner.nextLine();
+                String option = scanner.nextLine();
 
-                if (opcao.equals("0")) break;
+                if (option.equals("0")) break;
 
-                if (opcao.equals("1")) {
+                if (option.equals("1")) {
                     System.out.print("Enter the term: ");
-                    String termo = scanner.nextLine();
+                    String term = scanner.nextLine();
 
                     BarrelConnection connection = tryGetBarrel();
                     if (connection == null) {
@@ -29,8 +29,8 @@ public class SearchServer {
                         continue;
                     }
 
-                    List<String> resultados = connection.service.search(termo);
-                    if (resultados.isEmpty()) {
+                    List<String> results = connection.service.search(term);
+                    if (results.isEmpty()) {
                         System.out.println("No results found.");
                     } else {
                         int pageSize = 10;
@@ -38,15 +38,15 @@ public class SearchServer {
 
                         while (true) {
                             int start = page * pageSize;
-                            int end = Math.min(start + pageSize, resultados.size());
+                            int end = Math.min(start + pageSize, results.size());
 
-                            System.out.println("\nResults [" + (start + 1) + "–" + end + "] of " + resultados.size() + ":");
+                            System.out.println("\nResults [" + (start + 1) + "–" + end + "] of " + results.size() + ":");
                             for (int i = start; i < end; i++) {
-                                System.out.println((i + 1) + ". " + resultados.get(i));
+                                System.out.println((i + 1) + ". " + results.get(i));
                             }
 
                             System.out.println("Responded by: " + connection.address);
-                            if (end == resultados.size()) {
+                            if (end == results.size()) {
                                 System.out.println("End of results.");
                                 break;
                             }
@@ -61,7 +61,7 @@ public class SearchServer {
                         }
                     }
 
-                } else if (opcao.equals("2")) {
+                } else if (option.equals("2")) {
                     System.out.print("Enter the URL to view backlinks: ");
                     String url = scanner.nextLine();
 
@@ -75,10 +75,11 @@ public class SearchServer {
                     if (backlinks.isEmpty()) {
                         System.out.println("No backlinks found.");
                     } else {
+                        System.out.println("Backlinks:");
                         backlinks.forEach(System.out::println);
                     }
 
-                } else if (opcao.equals("3")) {
+                } else if (option.equals("3")) {
                     BarrelConnection connection = tryGetBarrel();
                     if (connection == null) {
                         System.out.println("[ERROR] No barrel available.");

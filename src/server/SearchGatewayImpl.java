@@ -5,6 +5,10 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
+/**
+ * Implementação do Gateway que distribui pedidos de pesquisa para os barrels.
+ * Suporta balanceamento, tolerância a falhas e monitorização de disponibilidade.
+ */
 public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGateway {
     private final List<String> barrels;
     private int lastUsedIndex = -1;
@@ -17,13 +21,17 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         ));
     }
 
+    /**
+     * Devolve o próximo barrel disponível com base em round-robin,
+     * ignorando barrels que estejam offline.
+     */
     private synchronized String getNextBarrelAddress() {
         int attempts = 0;
         while (attempts < barrels.size()) {
             lastUsedIndex = (lastUsedIndex + 1) % barrels.size();
             String address = barrels.get(lastUsedIndex);
             try {
-                Naming.lookup(address);
+                Naming.lookup(address); // verifica se o barrel está online
                 return address;
             } catch (Exception e) {
                 System.out.println("[Gateway] Barrel offline: " + address);
@@ -33,9 +41,14 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         return null;
     }
 
+    /**
+     * Tenta aplicar uma função remota em qualquer barrel disponível.
+     * Se falhar num, tenta noutros até esgotar a lista.
+     */
     private <T> T tryBarrels(FunctionWrapper<T> fn, String actionName) {
         List<Integer> tried = new ArrayList<>();
         int attempts = 0;
+
         while (attempts < barrels.size()) {
             String address = getNextBarrelAddress();
             if (address == null || tried.contains(lastUsedIndex)) {
@@ -51,41 +64,58 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
             }
             attempts++;
         }
+
         System.out.println("[Gateway] All barrels failed for " + actionName);
         return null;
     }
 
+    // Métodos expostos remotamente
+    @Override
     public List<String> search(String term) throws RemoteException {
         List<String> result = tryBarrels(barrel -> barrel.search(term), "search");
         return result != null ? result : List.of();
     }
 
+    @Override
     public Set<String> getBacklinks(String url) throws RemoteException {
         Set<String> result = tryBarrels(barrel -> barrel.getBacklinks(url), "getBacklinks");
         return result != null ? result : Set.of();
     }
 
+    @Override
     public Map<String, Integer> getTopSearches() throws RemoteException {
         Map<String, Integer> result = tryBarrels(barrel -> barrel.getTopSearches(), "getTopSearches");
         return result != null ? result : Map.of();
     }
 
+    @Override
     public double getAverageSearchTime() throws RemoteException {
         Double result = tryBarrels(barrel -> barrel.getAverageSearchTime(), "getAverageSearchTime");
         return result != null ? result : -1;
     }
 
-    public List<String> getActiveBarrels() throws RemoteException {
-        List<String> active = new ArrayList<>();
-        for (String address : barrels) {
-            try {
-                Naming.lookup(address);
-                active.add(address);
-            } catch (Exception ignored) {}
+    /**
+     * Retorna todos os barrels ativos no momento (verificados por lookup).
+     */
+    @Override
+public List<String> getActiveBarrels() throws RemoteException {
+    List<String> active = new ArrayList<>();
+    for (String address : BarrelRegistry.getBarrelAddresses()) {
+        try {
+            SearchService barrel = (SearchService) Naming.lookup(address);
+            barrel.ping(); // método leve para garantir que está vivo
+            active.add(address);
+        } catch (Exception e) {
+            System.out.println("[Gateway] Barrel offline: " + address);
         }
-        return active;
     }
+    return active;
+}
 
+
+    /**
+     * Wrapper funcional que permite passar lambdas com exceções.
+     */
     @FunctionalInterface
     private interface FunctionWrapper<T> {
         T apply(SearchService barrel) throws Exception;
