@@ -20,11 +20,7 @@ public class CentralURLQueueImpl extends UnicastRemoteObject implements CentralU
         super();
     }
 
-    /**
-     * Adds a new URL to the queue if it hasn't been visited before.
-     *
-     * @param url the URL to be added
-     */
+    
     @Override
     public synchronized void addUrl(String url) throws RemoteException {
         if (!visited.contains(url)) {
@@ -36,11 +32,7 @@ public class CentralURLQueueImpl extends UnicastRemoteObject implements CentralU
         }
     }
 
-    /**
-     * Retrieves the next available URL from the queue.
-     *
-     * @return the next URL, or null if the queue is empty
-     */
+    
     @Override
     public synchronized String getNextUrl() throws RemoteException {
         String next = queue.poll();

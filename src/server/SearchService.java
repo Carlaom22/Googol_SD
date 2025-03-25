@@ -18,10 +18,8 @@ public interface SearchService extends Remote {
     Map<String, Integer> getTopSearches() throws RemoteException;
     double getAverageSearchTime() throws RemoteException;
 
-    // ✅ Método para replicação atômica
     IndexData exportIndexData() throws RemoteException;
 
-    // ✅ Método de status geral do sistema
     String status() throws RemoteException;
 
     void ping() throws RemoteException;

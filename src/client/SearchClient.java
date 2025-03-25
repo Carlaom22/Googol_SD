@@ -19,7 +19,7 @@ public class SearchClient {
                 System.out.println("3. View system statistics");
                 System.out.println("4. Add URL to index");
                 System.out.println("5. View active barrels");
-                System.out.println("6. View barrel status report");
+                System.out.println("6. View barrel(s) status report");
                 System.out.println("0. Exit");
                 System.out.print("Choose an option: ");
 

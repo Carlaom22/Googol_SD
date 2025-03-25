@@ -8,7 +8,6 @@ public class BarrelRegistry {
     private static final List<String> barrelAddresses = new ArrayList<>();
 
     static {
-        // Endereços iniciais
         registerBarrel("rmi://localhost/Barrel1");
         registerBarrel("rmi://localhost/Barrel2");
     }

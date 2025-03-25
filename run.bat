@@ -30,17 +30,14 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo Compiled with success.
 
-:: Start central queue
 echo Starting CentralURLQueueServer...
 start cmd /k "cd %BIN_DIR% && java server.CentralURLQueueServer"
 timeout /t 2
 
-:: Start gateway
 echo Starting SearchGatewayServer...
 start cmd /k "cd %BIN_DIR% && java server.SearchGatewayServer"
 timeout /t 2
 
-:: Start barrels
 echo Starting Barrel 1...
 start cmd /k "cd %BIN_DIR% && java index.IndexStorageBarrel1"
 timeout /t 1
@@ -49,16 +46,14 @@ echo Starting Barrel 2...
 start cmd /k "cd %BIN_DIR% && java index.IndexStorageBarrel2"
 timeout /t 1
 
-:: Start client
 echo Starting SearchClient...
 start cmd /k "cd %BIN_DIR% && java client.SearchClient"
 timeout /t 2
 
-:: Start WebCrawler (optional)
 echo Starting WebCrawler...
 start cmd /k "cd %BIN_DIR% && java -cp .;../lib/jsoup-1.18.3.jar crawler.WebCrawler"
 
-:: Optional: Start LinkAdder manually like this
+:: Optional: Start LinkAdder manually like this - equal for other files
 :: start cmd /k "cd %BIN_DIR% && java -cp .;../lib/jsoup-1.18.3.jar client.LinkAdder"
 
 echo Ready!

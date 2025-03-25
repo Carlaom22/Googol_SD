@@ -18,7 +18,6 @@ public class IndexStorageBarrel1 {
             System.out.println("[Barrel1][Startup] Loading index from disk...");
             InvertedIndex index = InvertedIndex.loadFromDisk("barrel1_index.ser");
 
-            // Tentativa inicial de sincronização com Barrel2
             try {
                 System.out.println("[Barrel1][Sync] Attempting immediate sync from Barrel2...");
                 SearchService other = (SearchService) Naming.lookup("rmi://localhost/Barrel2");
@@ -27,7 +26,6 @@ public class IndexStorageBarrel1 {
                 System.out.println("[Barrel1][Sync] Sync successful from Barrel2.");
             } catch (Exception e) {
                 System.out.println("[Barrel1][Sync] Immediate sync failed. Will retry in background.");
-                // Retry assíncrono
                 new Thread(() -> {
                     for (int i = 1; i <= 5; i++) {
                         try {

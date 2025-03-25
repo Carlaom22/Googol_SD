@@ -5,10 +5,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
-/**
- * Implementação do Gateway que distribui pedidos de pesquisa para os barrels.
- * Suporta balanceamento, tolerância a falhas e monitorização de disponibilidade.
- */
+
 public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGateway {
     private final List<String> barrels;
     private int lastUsedIndex = -1;
@@ -21,17 +18,14 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         ));
     }
 
-    /**
-     * Devolve o próximo barrel disponível com base em round-robin,
-     * ignorando barrels que estejam offline.
-     */
+   
     private synchronized String getNextBarrelAddress() {
         int attempts = 0;
         while (attempts < barrels.size()) {
             lastUsedIndex = (lastUsedIndex + 1) % barrels.size();
             String address = barrels.get(lastUsedIndex);
             try {
-                Naming.lookup(address); // verifica se o barrel está online
+                Naming.lookup(address); 
                 return address;
             } catch (Exception e) {
                 System.out.println("[Gateway] Barrel offline: " + address);
@@ -41,10 +35,7 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         return null;
     }
 
-    /**
-     * Tenta aplicar uma função remota em qualquer barrel disponível.
-     * Se falhar num, tenta noutros até esgotar a lista.
-     */
+ 
     private <T> T tryBarrels(FunctionWrapper<T> fn, String actionName) {
         List<Integer> tried = new ArrayList<>();
         int attempts = 0;
@@ -69,7 +60,6 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         return null;
     }
 
-    // Métodos expostos remotamente
     @Override
     public List<String> search(String term) throws RemoteException {
         List<String> result = tryBarrels(barrel -> barrel.search(term), "search");
@@ -94,28 +84,23 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         return result != null ? result : -1;
     }
 
-    /**
-     * Retorna todos os barrels ativos no momento (verificados por lookup).
-     */
+    
     @Override
-public List<String> getActiveBarrels() throws RemoteException {
-    List<String> active = new ArrayList<>();
-    for (String address : BarrelRegistry.getBarrelAddresses()) {
-        try {
-            SearchService barrel = (SearchService) Naming.lookup(address);
-            barrel.ping(); // método leve para garantir que está vivo
-            active.add(address);
-        } catch (Exception e) {
-            System.out.println("[Gateway] Barrel offline: " + address);
+    public List<String> getActiveBarrels() throws RemoteException {
+        List<String> active = new ArrayList<>();
+        for (String address : BarrelRegistry.getBarrelAddresses()) {
+            try {
+                SearchService barrel = (SearchService) Naming.lookup(address);
+                barrel.ping(); 
+                active.add(address);
+            } catch (Exception e) {
+                System.out.println("[Gateway] Barrel offline: " + address);
+            }
         }
+        return active;
     }
-    return active;
-}
 
 
-    /**
-     * Wrapper funcional que permite passar lambdas com exceções.
-     */
     @FunctionalInterface
     private interface FunctionWrapper<T> {
         T apply(SearchService barrel) throws Exception;

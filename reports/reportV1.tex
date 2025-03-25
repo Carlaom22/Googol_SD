@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage{graphicx} 
+\usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{float}
 \usepackage[utf8]{inputenc}
@@ -10,17 +10,31 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{setspace}
-\geometry{a4paper, portrait, margin=1in} 
+\geometry{a4paper, portrait, margin=1in}
 \setstretch{1.25}
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{Sistemas Distribuídos}
 \lhead{Meta 1 - Projeto}
 \rfoot{\thepage}
-
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{orange},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    breaklines=true,
+    frame=single,
+    tabsize=2,
+    showstringspaces=false,
+    captionpos=b
+}
 \titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{1em}{}
 \titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection.}{1em}{}
-
 \begin{document}
 
 \begin{titlepage}
@@ -46,196 +60,453 @@
     {\large \today \par}
 \end{titlepage}
 
+
+
 \newpage
+\tableofcontents
+\newpage
+
+
 
 \section{Introdução}
-Este relatório descreve o desenvolvimento de um sistema distribuído de indexação e pesquisa de páginas web, utilizando Java RMI. O projeto visa aplicar os conceitos de tolerância a falhas, replicação, concorrência e modularidade num ambiente de redes e sistemas distribuídos.
+
+Este relatório apresenta o desenvolvimento de um sistema distribuído para indexação e pesquisa de páginas web, desenvolvido no contexto da unidade curricular de Sistemas Distribuídos da Licenciatura em Engenharia Informática. O principal objetivo do projeto é aplicar, de forma prática, conceitos fundamentais da disciplina como comunicação remota, concorrência, tolerância a falhas, replicação e modularidade.
+
+A solução foi implementada em Java, utilizando RMI (Remote Method Invocation) como tecnologia base de comunicação entre os diversos módulos distribuídos. A arquitetura do sistema é composta por vários componentes independentes e cooperantes: cliente de pesquisa, gateway de distribuição, servidores de armazenamento (barrels), gestores de fila centralizada de URLs e crawlers responsáveis pela recolha e análise de páginas web.
+
+O sistema foi concebido para funcionar de forma concorrente e tolerante a falhas, com múltiplos crawlers a operar em paralelo e os dados replicados de forma atómica entre os diferentes barrels. Os dados são também guardados localmente, assegurando persistência e recuperação após falhas ou reinícios.
+
+Neste documento são descritas as principais decisões de arquitetura, os mecanismos de replicação e sincronização entre nós, os testes realizados, bem como o funcionamento detalhado de cada componente. O trabalho desenvolvido cumpre todos os objetivos definidos para a primeira meta do projeto, demonstrando uma abordagem sólida à construção de sistemas distribuídos robustos e escaláveis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \newpage
-
 \section{Objetivos do Projeto}
-\begin{itemize}
-    \item Permitir ao utilizador pesquisar termos e obter páginas ordenadas por relevância;
-    \item Indexar conteúdos web recursivamente, a partir de links inseridos;
-    \item Consultar backlinks e estatísticas (termos mais pesquisados, tempo médio);
-    \item Assegurar tolerância a falhas e balanceamento entre múltiplos servidores (barrels);
-    \item Permitir execução paralela de crawlers;
-    \item Armazenar dados persistentemente mesmo após falhas ou reinícios.
+O desenvolvimento deste sistema teve como propósito a construção de uma aplicação distribuída robusta, escalável e tolerante a falhas, com funcionalidades completas de recolha, indexação, armazenamento e pesquisa de páginas web. 
+\newline Para tal, foram definidos os seguintes objetivos específicos:
+
+\begin{itemize} 
+\item \textbf{Permitir a pesquisa de termos por parte dos utilizadores}, com apresentação dos resultados de forma ordenada consoante a sua relevância, baseada no número de ligações recebidas de outras páginas (backlinks);
+\item \textbf{Implementar um processo de indexação recursiva e automática}, a partir de URLs inseridos pelo utilizador, de modo a explorar e processar todos os links internos presentes nas páginas web;
+
+\item \textbf{Disponibilizar funcionalidades adicionais de consulta}, tais como a visualização da lista de páginas que referenciam uma determinada URL (backlinks), e estatísticas de utilização do sistema, incluindo os termos mais pesquisados e o tempo médio de resposta;
+
+\item \textbf{Assegurar tolerância a falhas}, garantindo que a aplicação se mantém funcional mesmo perante a indisponibilidade temporária de alguns dos seus componentes, nomeadamente os servidores de armazenamento (barrels);
+
+\item \textbf{Distribuir a carga entre múltiplos servidores de armazenamento}, implementando mecanismos de balanceamento que otimizem a utilização dos recursos disponíveis;
+
+\item \textbf{Permitir a execução paralela de múltiplos crawlers}, com isolamento e independência, assegurando a eficiência na recolha e indexação de conteúdos web;
+
+\item \textbf{Assegurar persistência dos dados}, garantindo que toda a informação indexada é armazenada localmente de forma segura e é recuperada automaticamente após falhas ou reinicializações do sistema.
+
 \end{itemize}
 
-\newpage
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
 \section{Componentes do Sistema}
-O sistema é composto pelos seguintes módulos:
 
-\begin{itemize}
-    \item \textbf{Cliente (SearchClient)}: Interface textual onde o utilizador pode:
-    \begin{itemize}
-        \item Pesquisar termos;
-        \item Consultar estatísticas e backlinks;
-        \item Adicionar links à fila central de indexação.
-    \end{itemize}
+O sistema foi estruturado de forma modular e distribuída, promovendo independência entre componentes e comunicação remota via Java RMI. Os principais módulos são:
 
-    \item \textbf{Gateway (SearchGateway)}: Encaminha pedidos do cliente para barrels ativos, com tolerância a falhas e balanceamento.
+\begin{itemize} \item \textbf{SearchClient}: Interface textual utilizada pelo utilizador para pesquisar termos, consultar backlinks, estatísticas, adicionar links e visualizar barrels ativos.
 
-    \item \textbf{Barrels (IndexStorageBarrel)}: Servidores que armazenam os índices invertidos e processam pesquisas. Operam com dados replicados e oferecem persistência via ficheiros.
+\item \textbf{SearchGateway}: Responsável por encaminhar pedidos para os barrels disponíveis, realizando balanceamento de carga e deteção de falhas.
 
-    \item \textbf{Fila Central (CentralURLQueue)}: Interface RMI responsável por armazenar e fornecer links aos crawlers.
+\item \textbf{IndexStorageBarrel}: Servidores de armazenamento que mantêm o índice invertido, backlinks e estatísticas. Executam persistência local e replicação de dados para garantir tolerância a falhas.
 
-    \item \textbf{Crawler (WebCrawler)}: Consome links da fila, faz scraping da página com JSoup, extrai texto e links e envia para um barrel.
+\item \textbf{WebCrawler}: Agentes responsáveis por recolher conteúdo web e enviar para os barrels. Suportam execução paralela, scraping com JSoup e envio atómico para múltiplos barrels.
 
-    \item \textbf{LinkAdder}: Aplicação de linha de comando usada para adicionar links à fila.
+\item \textbf{CentralURLQueue}: Fila central de URLs partilhada por todos os crawlers. Garante que cada URL é processado uma única vez e permite adição de novos links.
+
+\item \textbf{SearchService e SearchGateway (Interfaces RMI)}: Definem as operações remotas disponíveis nos barrels e na gateway, respetivamente.
+
+\item \textbf{SearchServiceImpl e SearchGatewayImpl}: Implementações concretas das interfaces RMI, com tratamento de concorrência e falhas.
+
+\item \textbf{LinkAdder}: Aplicação auxiliar que permite ao utilizador adicionar URLs à fila. Cada novo link origina o lançamento de um \texttt{WebCrawler} dedicado.
+
+\item \textbf{run.bat}: Script de arranque que compila o projeto e inicia automaticamente todos os componentes do sistema em terminais distintos.
 \end{itemize}
 
-\newpage
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
 \section{Funcionamento Geral}
 
-\subsection{Fluxo de Indexação}
+O sistema segue uma arquitetura modular com comunicação remota entre componentes, permitindo a indexação e pesquisa de páginas web de forma distribuída, tolerante a falhas e paralela.
+
+\subsection{Indexação}
+
 \begin{enumerate}
-    \item Utilizador insere um link pelo menu (opção 4);
-    \item O link é adicionado à \textit{CentralURLQueue};
-    \item Um \textit{WebCrawler} ativo consome o link da fila;
-    \item O crawler extrai o texto e os links da página com a biblioteca JSoup;
-    \item A informação é enviada para um barrel disponível;
-    \item O barrel atualiza os índices e armazena backlinks.
+    \item O utilizador insere um URL no cliente (\texttt{SearchClient}).
+    \item O link é adicionado à \texttt{CentralURLQueue}, que evita duplicações.
+    \item Um \texttt{WebCrawler} é lançado automaticamente numa nova thread.
+    \item O crawler obtém a página com JSoup, extrai o texto e os links.
+    \item Os dados são enviados para todos os barrels (multicast atómico).
+    \item Cada barrel atualiza o seu índice invertido e backlinks.
 \end{enumerate}
 
-\subsection{Fluxo de Pesquisa}
+Este processo é concorrente: múltiplos crawlers podem trabalhar em paralelo sem conflitos, graças à centralização da fila.
+
+\subsection{Pesquisa}
+
 \begin{enumerate}
-    \item Utilizador pesquisa um termo pelo cliente;
-    \item A pesquisa é encaminhada à \textit{SearchGateway};
-    \item A gateway escolhe um barrel disponível e envia o pedido;
-    \item O barrel devolve os resultados ordenados por backlinks;
-    \item O cliente apresenta os resultados 10 por página.
+    \item O utilizador pesquisa um termo no cliente.
+    \item O pedido é enviado para a \texttt{SearchGateway}.
+    \item Um barrel é escolhido automaticamente (round-robin).
+    \item O índice é consultado e os resultados ordenados por número de backlinks.
+    \item Os resultados são apresentados em grupos de 10.
 \end{enumerate}
+
+A gateway reencaminha o pedido se um barrel estiver offline, garantindo disponibilidade.
 
 \subsection{Outras Funcionalidades}
+
 \begin{itemize}
-    \item Estatísticas de uso: top 10 termos e tempo médio de resposta;
-    \item Consulta de backlinks de uma URL;
-    \item Interface tolerante a falhas: o sistema funciona mesmo que um barrel falhe;
-    \item Persistência com ficheiros .ser e .txt;
-    \item Crawlers paralelos podem ser iniciados manualmente.
+    \item Consulta de backlinks por URL;
+    \item Estatísticas: termos mais pesquisados e tempo médio de resposta;
+    \item Visualização de barrels ativos em tempo real;
+    \item Dados persistentes entre reinícios;
+    \item Crawlers executados em paralelo com threads independentes.
 \end{itemize}
 
-\newpage
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
 \section{Tolerância a Falhas e Confiabilidade}
-\begin{itemize}
-    \item A gateway tenta múltiplos barrels em ordem aleatória;
-    \item Se um barrel falhar, o outro é tentado automaticamente;
-    \item Os barrels são réplicas: ambos armazenam os mesmos dados;
-    \item A fila central evita duplicação de indexação entre crawlers;
-    \item Dados são recuperados ao reiniciar qualquer barrel;
-    \item Cada componente é modular e independente.
-\end{itemize}
+
+O sistema foi concebido para manter a sua integridade e operabilidade mesmo perante falhas parciais ou interrupções temporárias. Foram implementados vários mecanismos que asseguram a continuidade dos serviços, a consistência dos dados e a recuperação automática em caso de falhas.
+
+\subsection{Replicação Fiável entre Barrels}
+
+Todos os \textit{storage barrels} mantêm cópias consistentes do índice invertido. Para garantir a coerência entre os nós, o processo de indexação recorre a \textbf{multicast atómico}: o \textit{WebCrawler} envia a página a todos os barrels e apenas considera a indexação concluída após todos confirmarem a receção. Esta abordagem assegura consistência mesmo em presença de falhas temporárias de comunicação.
+
+\subsection{Recuperação de Estado}
+
+Cada barrel persiste periodicamente os seus dados localmente em ficheiros \texttt{.ser} (binário) e \texttt{.txt} (legível). Ao reiniciar, o barrel tenta importar dados atualizados de outro barrel ativo através dos métodos \texttt{exportIndexData()} e \texttt{importIndexData()}. Na ausência de barrels disponíveis, carrega os dados locais salvos. Este processo de sincronização é realizado de forma assíncrona, sem bloquear o arranque do servidor.
+
+\subsection{Alta Disponibilidade}
+
+A \textit{SearchGateway} monitoriza dinamicamente o estado dos barrels. Caso um barrel esteja indisponível, os pedidos são automaticamente redirecionados para outro ativo. Esta redundância assegura que o sistema continua funcional desde que pelo menos um barrel esteja operacional, sem impacto para o utilizador.
+
+\subsection{Distribuição de Carga}
+
+As pesquisas são distribuídas entre os barrels de forma equilibrada com uma política de \textbf{round-robin}, implementada na gateway. Esta técnica contribui para a escalabilidade e evita sobrecarga de servidores específicos.
+
+\subsection{Execução Concorrente de Crawlers}
+
+A cada URL inserido na fila de indexação, é criado um novo \textit{WebCrawler} numa thread independente. Este paralelismo permite acelerar o processo de recolha e indexação de páginas, garantindo eficiência e utilização ótima dos recursos disponíveis.
+
+\subsection{Resiliência da Gateway}
+
+A \textit{SearchGateway} é projetada para continuar operacional independentemente do estado dos barrels. Quando todos os barrels estão offline, notifica o utilizador e permanece em execução, retomando automaticamente as funcionalidades normais assim que algum barrel se torne novamente acessível.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \newpage
+\section{RMI - Replicação e Multicast Fiável}
 
-\section{Testes Realizados}
-\begin{itemize}
-    \item Adição de links via LinkAdder → verificação na fila e no WebCrawler;
-    \item Verificação da indexação no terminal dos barrels;
-    \item Pesquisa de termos e análise dos resultados;
-    \item Consulta de backlinks funcionais;
-    \item Simulação de falha de barrel → continuidade do sistema;
-    \item Reinício de barrel → dados anteriores carregados corretamente;
-    \item Múltiplos crawlers → sem duplicação de tarefas.
+A replicação entre barrels segue o princípio de \textbf{multicast atómico}:
+\begin{itemize} \item O \texttt{WebCrawler} envia cada nova página para todos os barrels ativos através de chamadas RMI ao método \texttt{indexPage()}.
+\item A indexação só é considerada completa após todos os barrels confirmarem sucesso. Isto é implementado no ciclo com verificação de \texttt{confirmed.contains(address)} na classe \texttt{WebCrawler}.
+
+\item Em caso de falha de comunicação com um barrel, é feito \texttt{retry} com \texttt{Thread.sleep(1000)} até obter sucesso.
+
+\item Quando um barrel reinicia, importa o estado de outro barrel usando \texttt{exportIndexData()} e \texttt{importIndexData()}. Ver exemplo na classe \texttt{IndexStorageBarrel1}:
+\begin{lstlisting}[language=Java, caption={Interface remota SearchService}]
+    InvertedIndex.IndexData data = other.exportIndexData(); 
+    index.importIndexData(data);
+\end{lstlisting}
 \end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
 
 \newpage
+\section{Interfaces RMI e Componentes Distribuídos}
 
-\section{Divisão de Trabalho}
-\begin{itemize}
-    \item \textbf{Carlos Soares}: Cliente, gateway, balanceamento e gestão de RMI;
-    \item \textbf{Miguel Machado}: WebCrawler, fila central, persistência e replicação;
-    \item \textbf{Ambos}: Integração, testes, relatório e apresentação.
+O sistema utiliza RMI para permitir que os objetos distribuídos comuniquem entre si de forma transparente:
+
+\begin{itemize} \item \texttt{SearchGateway}: utilizado pelo cliente. Define métodos como \texttt{search()}, \texttt{getTopSearches()}, \texttt{getActiveBarrels()}.
+\item \texttt{SearchService}: implementado pelos barrels. Inclui os métodos \texttt{indexPage()}, \texttt{search()}, \texttt{getBacklinks()}, \texttt{exportIndexData()}, entre outros.
+
+\item \texttt{CentralURLQueue}: usado pelos crawlers. Expõe \texttt{getNextUrl()} e \texttt{addUrl()}.
+
+\item Os métodos RMI estão protegidos por \texttt{synchronized}, garantindo concorrência segura (ex: \texttt{public synchronized void indexPage(...)}).
+
+\item Todos os acessos remotos são protegidos com blocos \texttt{try/catch} e os servidores utilizam \texttt{Naming.rebind()} para registo.
 \end{itemize}
+
+
+\subsection*{Exemplo de JAVA RMI: Interface remota \texttt{SearchService.java}}
+
+O sistema utiliza \textbf{Java RMI (Remote Method Invocation)} como base para a comunicação entre os seus componentes. Cada serviço define uma interface remota que é implementada e registada num servidor. Seguem exemplos reais da implementação.
+
+\begin{lstlisting}[language=Java, caption={Interface remota SearchService}]
+public interface SearchService extends Remote {
+    void indexPage(String url, String content) throws RemoteException;
+    List<String> search(String term) throws RemoteException;
+    Set<String> getBacklinks(String url) throws RemoteException;
+    IndexData exportIndexData() throws RemoteException;
+}
+\end{lstlisting}
+
+
+
+
+
+
 
 \newpage
-
-\section{Conclusão}
-O sistema cumpre todos os requisitos funcionais e técnicos da Meta 1. Foi testado com sucesso em cenários de uso real e simulação de falhas. A comunicação via RMI, a modularidade dos componentes, e a facilidade de extensão fazem deste projeto uma base sólida para fases futuras.
-
-
-\maketitle
-
-\section{Iniciar o Sistema}
-Executar o seguinte comando na raiz do projeto:
-
-\begin{itemize}
-  \item \texttt{.\textbackslash run.bat}
-\end{itemize}
-
-Este comando compila todos os ficheiros e inicia:
-\begin{itemize}
-  \item Fila central de URLs (\texttt{CentralURLQueueServer})
-  \item Gateway de pesquisa (\texttt{SearchGatewayServer})
-  \item Barrels (\texttt{IndexStorageBarrel1} e \texttt{IndexStorageBarrel2})
-  \item Cliente de pesquisa (\texttt{SearchClient})
-  \item Crawler opcional
-\end{itemize}
-
-\section{Utilizar o Cliente de Pesquisa}
-
-Menu apresentado ao utilizador:
-
-\begin{itemize}
-  \item 1. Pesquisar termo
-  \item 2. Ver backlinks de uma página
-  \item 3. Estatísticas do sistema
-  \item 4. Adicionar URL para indexação
-  \item 5. Ver barrels ativos
-  \item 0. Sair
-\end{itemize}
-
-\section{Adicionar um URL (Opção 4)}
+\section{Exemplo Prático de Execução do Sistema}
+\subsection*{1. Iniciar o Sistema}
 
 \begin{enumerate}
-  \item Ao escolher a opção 4, abre-se o \texttt{LinkAdder} num terminal separado.
-  \item O utilizador escreve um URL. Exemplo: \texttt{https://pt.wikipedia.org/wiki/Java}
-  \item Esse link é enviado para a fila de indexação.
-  \item Automaticamente, uma nova \textbf{Thread} é criada que lança um \texttt{WebCrawler} dedicado.
-  \item O crawler indexa o conteúdo da página, extrai links e envia os dados para os barrels.
+    \item Abrir um terminal na raiz do projeto.
+    \item Executar o seguinte comando:
 \end{enumerate}
 
-Cada novo link inserido cria um novo \texttt{WebCrawler} independente.
+\begin{lstlisting}[language=bash]
+.\run.bat
+\end{lstlisting}
 
-\section{Pesquisar Termos (Opção 1)}
+Este script compila e inicia todos os componentes em terminais separados: fila central, gateway, barrels, cliente e crawler.
+
+\subsection*{2. Adicionar um URL para Indexação}
+
+No terminal do cliente \texttt{SearchClient}, o menu apresenta várias opções. O utilizador escolhe a opção \texttt{4}:
+
+Uma nova janela é aberta com o programa \texttt{LinkAdder}. O utilizador introduz um link, por exemplo:
+
+\begin{lstlisting}
+Enter URL to index: https://en.wikipedia.org/wiki/Distributed_computing
+\end{lstlisting}
+
+Este link é enviado para a fila central. Um \texttt{WebCrawler} é lançado automaticamente numa nova thread, e começa a processar o conteúdo da página.
+
+Nos terminais dos barrels, surgem mensagens como:
+
+\begin{lstlisting}
+[Barrel][Indexing] https://en.wikipedia.org/wiki/Distributed_computing
+[Barrel][Backlink] Registered: https://en.wikipedia.org/... -> ...
+\end{lstlisting}
+
+\subsection*{3. Pesquisar um Termo}
+
+De volta ao \texttt{SearchClient}, o utilizador escolhe a opção \texttt{1} para realizar uma pesquisa:
+
+\begin{lstlisting}
+Choose an option: 1
+Enter search term: distributed
+\end{lstlisting}
+
+O sistema apresenta os resultados paginados (10 por página), ordenados por número de backlinks:
+
+\begin{lstlisting}
+Results [1–10] of 23:
+1. https://en.wikipedia.org/wiki/Distributed_computing
+2. https://en.wikipedia.org/wiki/Cloud_computing
+...
+Type 'n' for next page or 'q' to quit:
+\end{lstlisting}
+
+\subsection*{4. Estatísticas e Funcionalidades Extra}
+
+O utilizador pode ainda ver os termos mais pesquisados e o tempo médio de resposta, consultar backlinks de uma URL, etc.
+
+\subsection*{5. Encerrar o Sistema}
+
+Todos os componentes podem ser encerrados manualmente ou fechando as janelas de terminal. Os barrels guardam automaticamente os dados em ficheiros \texttt{.ser} e \texttt{.txt}, garantindo persistência.
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+\section{Divisão de Trabalho}
 \begin{itemize}
-  \item Termos são enviados para o \texttt{SearchGateway}, que distribui pedidos entre os barrels (round-robin).
-  \item Os resultados são ordenados por número de backlinks.
-  \item São apresentados 10 por página.
+    \item \textbf{Carlos Soares}: 
+    \item \textbf{Miguel Machado}: 
+    \item \textbf{Ambos}: 
 \end{itemize}
 
-\section{Outras Funcionalidades}
+
+
+
+
+
+\newpage
+\section{Testes Realizados}
+
+\begin{tabularx}{\textwidth}{|l|X|c|}
+\hline
+\textbf{ID} & \textbf{Descrição} & \textbf{Resultado} \\
+\hline
+T1 & Indexar novo URL pelo cliente e confirmar receção nos barrels & OK \\
+T2 & A pesquisa devolve páginas relevantes ordenadas por backlinks & OK \\
+T3 & Consulta de backlinks de uma página específica funciona corretamente & OK \\
+T4 & Resultados são agrupados de 10 em 10 na interface do cliente & OK \\
+T5 & Ao desligar 1 barrel, o sistema mantém-se funcional (gateway reencaminha) & OK \\
+T6 & Ao reiniciar barrel, este sincroniza os dados anteriores & OK \\
+T7 & Barrels mantêm estado com persistência (.ser e .txt) & OK \\
+T8 & Crawlers funcionam em paralelo sem conflitos ou duplicação & OK \\
+T9 & LinkAdder cria nova thread por URL, e os crawlers trabalham em simultâneo & OK \\
+T10 & Estatísticas e tempo médio de resposta são atualizados em tempo real & OK \\
+\hline
+\end{tabularx}
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+\section{Conclusão e Considerações Finais}
+O sistema cumpre todos os requisitos funcionais e técnicos da Meta 1. Foi testado com sucesso em cenários de uso real e simulação de falhas. A comunicação via RMI, a modularidade dos componentes, e a facilidade de extensão fazem deste projeto uma base sólida para fases futuras.
+O projeto satisfaz todos os requisitos da Meta 1:
 \begin{itemize}
-  \item \textbf{Opção 2:} Mostra backlinks de uma URL.
-  \item \textbf{Opção 3:} Mostra top 10 de termos pesquisados e tempo médio de resposta.
-  \item \textbf{Opção 5:} Mostra quais barrels estão ativos no momento.
+    \item Indexação recursiva e pesquisa por termos;
+    \item Tolerância a falhas (replicação + recuperação);
+    \item Utilização de threads com sincronização e persistência;
+    \item Uso correto de RMI com verificação de interfaces.
 \end{itemize}
 
-\section{Tolerância a Falhas}
-\begin{itemize}
-  \item Se um barrel falhar, o gateway utiliza outro automaticamente.
-  \item A indexação é replicada para todos os barrels ativos (multicast lógico via RMI).
-\end{itemize}
-
-\section{Persistência e Threads}
-\begin{itemize}
-  \item Barrels guardam automaticamente os dados periodicamente com \texttt{Threads}.
-  \item Crawlers são lançados via \texttt{Thread} no \texttt{LinkAdder}, garantindo paralelismo real.
-\end{itemize}
-
-\section{Testar o Sistema}
-\begin{itemize}
-  \item Adicionar múltiplos links via \texttt{LinkAdder}
-  \item Observar novos terminais de crawlers a surgir
-  \item Pesquisar termos e observar respostas
-  \item Fechar um barrel e confirmar que o outro responde normalmente
-\end{itemize}
-
-
-
+O sistema é modular, escalável e robusto.
 \end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
