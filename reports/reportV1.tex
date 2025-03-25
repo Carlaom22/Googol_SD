@@ -10,12 +10,14 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{setspace}
+\usepackage{tabularx}
+\usepackage{booktabs}
 \geometry{a4paper, portrait, margin=1in}
 \setstretch{1.25}
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{Sistemas Distribuídos}
-\lhead{Meta 1 - Projeto}
+\lhead{Meta 1}
 \rfoot{\thepage}
 \usepackage{listings}
 \usepackage{xcolor}
@@ -53,7 +55,7 @@
     \vspace{3cm}
     \begin{tabular}{ll}
         \textbf{Carlos Soares} & 2020230124, uc2020230124@student.uc.pt \\
-        \textbf{Miguel Machado} & 2020230124, uc2020230124@student.uc.pt 
+        \textbf{Miguel Machado} & 2020222874, uc2020222874@student.uc.pt 
     \end{tabular}
 
     \vfill
@@ -76,7 +78,8 @@ A solução foi implementada em Java, utilizando RMI (Remote Method Invocation) 
 
 O sistema foi concebido para funcionar de forma concorrente e tolerante a falhas, com múltiplos crawlers a operar em paralelo e os dados replicados de forma atómica entre os diferentes barrels. Os dados são também guardados localmente, assegurando persistência e recuperação após falhas ou reinícios.
 
-Neste documento são descritas as principais decisões de arquitetura, os mecanismos de replicação e sincronização entre nós, os testes realizados, bem como o funcionamento detalhado de cada componente. O trabalho desenvolvido cumpre todos os objetivos definidos para a primeira meta do projeto, demonstrando uma abordagem sólida à construção de sistemas distribuídos robustos e escaláveis.
+Neste documento são descritas as principais decisões de arquitetura, os mecanismos de replicação e sincronização entre nós, os testes realizados, bem como o funcionamento detalhado de cada componente. 
+O trabalho desenvolvido cumpre, na sua maioria, os objetivos definidos para a primeira meta do projeto, demonstrando uma abordagem sólida.
 
 
 
@@ -352,7 +355,7 @@ public interface SearchService extends Remote {
 
 \newpage
 \section{Exemplo Prático de Execução do Sistema}
-\subsection*{1. Iniciar o Sistema}
+\subsection{Iniciar o Sistema}
 
 \begin{enumerate}
     \item Abrir um terminal na raiz do projeto.
@@ -365,7 +368,7 @@ public interface SearchService extends Remote {
 
 Este script compila e inicia todos os componentes em terminais separados: fila central, gateway, barrels, cliente e crawler.
 
-\subsection*{2. Adicionar um URL para Indexação}
+\subsection{Adicionar um URL para Indexação}
 
 No terminal do cliente \texttt{SearchClient}, o menu apresenta várias opções. O utilizador escolhe a opção \texttt{4}:
 
@@ -384,7 +387,7 @@ Nos terminais dos barrels, surgem mensagens como:
 [Barrel][Backlink] Registered: https://en.wikipedia.org/... -> ...
 \end{lstlisting}
 
-\subsection*{3. Pesquisar um Termo}
+\subsection{Pesquisar um Termo}
 
 De volta ao \texttt{SearchClient}, o utilizador escolhe a opção \texttt{1} para realizar uma pesquisa:
 
@@ -403,11 +406,11 @@ Results [1–10] of 23:
 Type 'n' for next page or 'q' to quit:
 \end{lstlisting}
 
-\subsection*{4. Estatísticas e Funcionalidades Extra}
+\subsection{Estatísticas e Funcionalidades Extra}
 
 O utilizador pode ainda ver os termos mais pesquisados e o tempo médio de resposta, consultar backlinks de uma URL, etc.
 
-\subsection*{5. Encerrar o Sistema}
+\subsection{Encerrar o Sistema}
 
 Todos os componentes podem ser encerrados manualmente ou fechando as janelas de terminal. Os barrels guardam automaticamente os dados em ficheiros \texttt{.ser} e \texttt{.txt}, garantindo persistência.
 
@@ -426,9 +429,9 @@ Todos os componentes podem ser encerrados manualmente ou fechando as janelas de 
 \newpage
 \section{Divisão de Trabalho}
 \begin{itemize}
-    \item \textbf{Carlos Soares}: 
-    \item \textbf{Miguel Machado}: 
-    \item \textbf{Ambos}: 
+    \item \textbf{Carlos Soares}:   Downloaders (WebCrawler) e  componente multicast fiável dos Barrels.
+    \item \textbf{Miguel Machado}: Gateway e componente RPC/RMI dos Barrels.
+    \item \textbf{Ambos}: Relatório e código em geral.
 \end{itemize}
 
 
@@ -437,25 +440,84 @@ Todos os componentes podem ser encerrados manualmente ou fechando as janelas de 
 
 
 \newpage
-\section{Testes Realizados}
 
-\begin{tabularx}{\textwidth}{|l|X|c|}
-\hline
-\textbf{ID} & \textbf{Descrição} & \textbf{Resultado} \\
-\hline
-T1 & Indexar novo URL pelo cliente e confirmar receção nos barrels & OK \\
-T2 & A pesquisa devolve páginas relevantes ordenadas por backlinks & OK \\
-T3 & Consulta de backlinks de uma página específica funciona corretamente & OK \\
-T4 & Resultados são agrupados de 10 em 10 na interface do cliente & OK \\
-T5 & Ao desligar 1 barrel, o sistema mantém-se funcional (gateway reencaminha) & OK \\
-T6 & Ao reiniciar barrel, este sincroniza os dados anteriores & OK \\
-T7 & Barrels mantêm estado com persistência (.ser e .txt) & OK \\
-T8 & Crawlers funcionam em paralelo sem conflitos ou duplicação & OK \\
-T9 & LinkAdder cria nova thread por URL, e os crawlers trabalham em simultâneo & OK \\
-T10 & Estatísticas e tempo médio de resposta são atualizados em tempo real & OK \\
-\hline
+\newpage
+\section{Tabela de Testes}
+
+\subsection{Gateway}
+
+\begin{tabularx}{\textwidth}{X l}
+\toprule
+\textbf{Descrição} & \textbf{Resultado} \\
+\midrule
+Conexão RMI em localhost & Passou \\
+Conexão RMI entre diferentes máquinas & Falhou \\
+Ligar/Desligar barrels e confirmar atualização de estados & Falhou \\
+Múltiplos clientes conectados simultaneamente & Falhou \\
+Pedidos de menu (Cliente → Gateway → Downloader / URLQueue / ISB) & Passou \\
+Balanceamento de carga entre barrels & Passou \\
+Redirecionamento de pedidos em caso de falha & Passou \\
+\bottomrule
 \end{tabularx}
 
+\vspace{1em}
+\subsection{Downloader}
+
+\begin{tabularx}{\textwidth}{X l}
+\toprule
+\textbf{Descrição} & \textbf{Resultado} \\
+\midrule
+Integração URLQueue → adicionar e consumir da fila & Passou \\
+Indexação de URL & Passou \\
+Indexação recursiva (exploração de links internos) & Passou \\
+Integração com ISB & Passou \\
+Execução concorrente e multithreading & Passou \\
+Particionamento do índice / mensagens entre barrels & Falhou \\
+Envio via multicast para todos os barrels & Passou \\
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+\subsection{IndexStorageBarrel (ISB)}
+
+\begin{tabularx}{\textwidth}{X l}
+\toprule
+\textbf{Descrição} & \textbf{Resultado} \\
+\midrule
+Resultados de pesquisa ordenados por backlinks & Passou \\
+Integração com Downloader e sincronização via multicast & Passou \\
+Stress test com múltiplos downloaders & Passou \\
+Comunicação Cliente → Gateway → ISB & Passou \\
+Deteção de falhas ou perda de pacotes & Falhou \\
+Vários barrels ativos em simultâneo de forma correta & Passou \\
+Recuperação de dados após falha e reinício de um barrel & Passou \\
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+\subsection{URLQueue}
+
+\begin{tabularx}{\textwidth}{X l}
+\toprule
+\textbf{Descrição} & \textbf{Resultado} \\
+\midrule
+Integração com Gateway e Downloaders (conexão + RMI) & Passou \\
+Concorrência / bloqueios: evitar duplicações e condições de corrida & Passou \\
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+\subsection{Cliente}
+
+\begin{tabularx}{\textwidth}{X l}
+\toprule
+\textbf{Descrição} & \textbf{Resultado} \\
+\midrule
+Conexão via RMI à Gateway & Passou \\
+Página de administração (menu) atualizada em tempo real & Passou \\
+Testes de input/output e navegação no menu & Passou \\
+\bottomrule
+\end{tabularx}
 
 
 
@@ -468,16 +530,32 @@ T10 & Estatísticas e tempo médio de resposta são atualizados em tempo real & 
 
 \newpage
 \section{Conclusão e Considerações Finais}
-O sistema cumpre todos os requisitos funcionais e técnicos da Meta 1. Foi testado com sucesso em cenários de uso real e simulação de falhas. A comunicação via RMI, a modularidade dos componentes, e a facilidade de extensão fazem deste projeto uma base sólida para fases futuras.
-O projeto satisfaz todos os requisitos da Meta 1:
+
+O sistema desenvolvido cumpre os objetivos propostos para a Meta 1, incluindo indexação recursiva, pesquisa distribuída, tolerância a falhas, concorrência e persistência de dados. A arquitetura modular baseada em RMI demonstrou-se eficaz e extensível, e o sistema comportou-se corretamente em testes com múltiplos crawlers e falhas simuladas.
+
+Durante o desenvolvimento, foram adotadas várias decisões técnicas que reforçaram a robustez do sistema:
+
 \begin{itemize}
-    \item Indexação recursiva e pesquisa por termos;
-    \item Tolerância a falhas (replicação + recuperação);
-    \item Utilização de threads com sincronização e persistência;
-    \item Uso correto de RMI com verificação de interfaces.
+    \item \textbf{Multicast atómico na indexação}: A indexação é considerada concluída apenas após todos os barrels confirmarem receção, garantindo consistência entre réplicas.
+
+    \item \textbf{Sincronização assíncrona entre barrels}: A recuperação de estado após falha é feita em background, permitindo arranque rápido mesmo com falhas temporárias.
+
+    \item \textbf{Evitar RMI em blocos sincronizados}: As chamadas RMI foram mantidas fora de secções críticas para evitar \textit{deadlocks} e melhorar desempenho.
+
+    \item \textbf{Logs com identificação por thread}: Permitiram validar o paralelismo entre crawlers e facilitaram a depuração.
+
+    \item \textbf{Script \texttt{run.bat}}: Automatiza a compilação e arranque de todos os componentes, simplificando testes e utilização.
+
+    \item \textbf{Persistência dual (\texttt{.ser} + \texttt{.txt})}: Além do armazenamento binário, é gerado um ficheiro de texto para verificação manual.
+
+    \item \textbf{Modularização do \texttt{LinkAdder}}: Mantido como componente separado para facilitar testes e simplificar o cliente.
+
+    \item \textbf{Lançamento de crawlers em threads dedicadas}: Garante concorrência real e escalabilidade na indexação de múltiplos URLs.
 \end{itemize}
 
-O sistema é modular, escalável e robusto.
+Estas opções, embora não obrigatórias, aumentaram a fiabilidade, clareza e desempenho do sistema, contribuindo para um projeto robusto e preparado para evolução futura.
+
+
 \end{document}
 
 
