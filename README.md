@@ -1,15 +1,15 @@
-============================================================
+
      Projeto de Sistemas Distribuídos - Meta 1 - 2025
-============================================================
+
 
 Autores:
 - Carlos Soares     | 2020230124 | uc2020230124@student.uc.pt
-- Miguel Machado    | 2020230124 | uc2020230124@student.uc.pt
+- Miguel Machado    | 2020222874 | uc2020222874@student.uc.pt
 
 
-============================================================
+
   📁 Estrutura do Projeto
-============================================================
+
 
 SD_2/
 │
@@ -45,9 +45,8 @@ SD_2/
         ├── CentralURLQueueImpl.java        # Implementação da fila central
         └── CentralURLQueueServer.java      # Publica a fila de URLs no RMI
 
-============================================================
+
   📌 Funcionamento Geral (Resumo)
-============================================================
 
 Utilizador (SearchClient)
    ⇩
@@ -61,9 +60,8 @@ Separadamente:
 LinkAdder → CentralURLQueue ← WebCrawler(s)
 
 
-============================================================
+
   ▶️ Como executar
-============================================================
 
 1. Abre um terminal na raiz do projeto (`SD_2/`)
 2. Executa:
@@ -85,9 +83,8 @@ LinkAdder → CentralURLQueue ← WebCrawler(s)
 
 4. Cada novo link inserido gera um WebCrawler autónomo numa nova thread.
 
-============================================================
+
   💡 Observações
-============================================================
 
 - A comunicação entre os módulos é feita via Java RMI.
 - Toda a indexação é replicada de forma atómica para todos os barrels.
@@ -95,5 +92,4 @@ LinkAdder → CentralURLQueue ← WebCrawler(s)
 - A fila central impede duplicação de URLs entre crawlers.
 - O sistema suporta múltiplos crawlers e é completamente concorrente.
 
-============================================================
 
