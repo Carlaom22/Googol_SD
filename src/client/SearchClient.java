@@ -3,6 +3,8 @@ package client;
 import java.rmi.Naming;
 import java.util.*;
 import server.SearchGateway;
+import java.util.Arrays;
+
 
 public class SearchClient {
     public static void main(String[] args) {
@@ -48,9 +50,11 @@ public class SearchClient {
 
     private static void searchTerm(SearchGateway gateway, Scanner scanner) {
         try {
-            System.out.print("Enter search term: ");
-            String term = scanner.nextLine().trim();
-            List<String> results = gateway.search(term);
+            System.out.print("Enter search terms (separated by space): ");
+            String input = scanner.nextLine().trim().toLowerCase();
+            List<String> terms = Arrays.asList(input.split("\\s+"));
+
+            List<String> results = gateway.searchMultiple(terms);
 
             if (results.isEmpty()) {
                 System.out.println("No results found.");
@@ -78,10 +82,11 @@ public class SearchClient {
             }
 
         } catch (Exception e) {
-            System.out.println("[ERROR] Failed to search term.");
+            System.out.println("[ERROR] Failed to search terms.");
             e.printStackTrace();
         }
     }
+
 
     private static void viewBacklinks(SearchGateway gateway, Scanner scanner) {
         try {

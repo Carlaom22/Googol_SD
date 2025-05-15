@@ -61,10 +61,31 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
     }
 
     @Override
-    public List<String> search(String term) throws RemoteException {
-        List<String> result = tryBarrels(barrel -> barrel.search(term), "search");
-        return result != null ? result : List.of();
+    public List<String> search(String termo) throws RemoteException {
+        return searchMultiple(List.of(termo));
     }
+
+
+    @Override
+    public List<String> searchMultiple(List<String> terms) throws RemoteException {
+        Set<String> finalResults = new LinkedHashSet<>();
+
+        for (String term : terms) {
+            List<String> results = tryBarrels(barrel -> barrel.search(term), "search");
+            if (results != null) {
+                finalResults.addAll(results);
+            }
+        }
+
+        return new ArrayList<>(finalResults);
+    }
+
+
+
+
+    
+
+
 
     @Override
     public Set<String> getBacklinks(String url) throws RemoteException {
@@ -99,6 +120,53 @@ public class SearchGatewayImpl extends UnicastRemoteObject implements SearchGate
         }
         return active;
     }
+
+    @Override
+    public String getStats() throws RemoteException {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Top Pesquisas:\n");
+        Map<String, Integer> topSearches = getTopSearches();
+        if (topSearches.isEmpty()) {
+            sb.append("Sem pesquisas registadas.\n");
+        } else {
+            for (Map.Entry<String, Integer> entry : topSearches.entrySet()) {
+                sb.append("- ").append(entry.getKey())
+                .append(": ").append(entry.getValue()).append(" vezes\n");
+            }
+        }
+
+        sb.append("\nTempo médio de pesquisa: ")
+        .append(String.format("%.2f", getAverageSearchTime()))
+        .append(" ms\n");
+
+        sb.append("\nBarrels ativos:\n");
+        List<String> barrels = getActiveBarrels();
+        if (barrels.isEmpty()) {
+            sb.append("Nenhum barrel ativo.\n");
+        } else {
+            for (String b : barrels) {
+                sb.append("- ").append(b).append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    @Override
+    public void addURL(String url) throws RemoteException {
+        System.out.println("[Gateway] URL recebida para indexar: " + url);
+        try {
+            CentralURLQueue queue = (CentralURLQueue) Naming.lookup("//localhost:1099/CentralURLQueue");
+            queue.addUrl(url);
+        } catch (Exception e) {
+            System.err.println("[Gateway] Erro ao contactar a CentralURLQueue: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+
 
 
     @FunctionalInterface

@@ -30,7 +30,7 @@ public class WebCrawler {
 
         try {
             System.out.println("[DEBUG] Connecting to RMI queue...");
-            queue = (CentralURLQueue) Naming.lookup("rmi://localhost/URLQueue");
+            queue = (CentralURLQueue) Naming.lookup("rmi://localhost/CentralURLQueue");
             System.out.println("[DEBUG] Connected to URLQueue.");
 
             for (int i = 0; i < NUM_THREADS; i++) {

@@ -6,19 +6,19 @@ import java.rmi.registry.LocateRegistry;
 public class CentralURLQueueServer {
     public static void main(String[] args) {
         try {
+            CentralURLQueueImpl queue = new CentralURLQueueImpl();
+
+            // (opcional, se ainda não houver um Registry)
             try {
                 LocateRegistry.createRegistry(1099);
-                System.out.println("[Queue] RMI Registry started.");
+                System.out.println("[RMI] Registry criado na porta 1099");
             } catch (Exception e) {
-                System.out.println("[Queue] RMI Registry already running.");
+                System.out.println("[RMI] Registry já existente.");
             }
 
-            CentralURLQueue queue = new CentralURLQueueImpl();
-            Naming.rebind("rmi://localhost/URLQueue", queue);
-            System.out.println("[Queue] CentralURLQueue available at rmi://localhost/URLQueue");
-
+            Naming.rebind("CentralURLQueue", queue);
+            System.out.println("[CentralURLQueueServer] Serviço registado com sucesso.");
         } catch (Exception e) {
-            System.err.println("[ERROR] Failed to start CentralURLQueueServer.");
             e.printStackTrace();
         }
     }
